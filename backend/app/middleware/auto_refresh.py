@@ -14,14 +14,10 @@ from app.core.security import (
 import re
 
 EXCLUDED_PATHS = [
-    "/api/auth/", 
-    "/api/profiles/",  # Исключает все пути, начинающиеся с /api/profiles/
     "/static/",
     "/docs", 
     "/openapi.json", 
     "/redoc",
-    "/api/collections",
-    "/api/stamps"
 ]
 
 async def auto_refresh_token_middleware(request: Request, call_next):

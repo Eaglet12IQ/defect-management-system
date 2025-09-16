@@ -7,7 +7,7 @@ from pathlib import Path
 from app.middleware.logging import LoggingMiddleware
 import app.logging_config  # to initialize logging config
 
-app = FastAPI(title="PhilateList")
+app = FastAPI(title="DefectManagmentSystem")
 
 app.add_middleware(LoggingMiddleware)
 

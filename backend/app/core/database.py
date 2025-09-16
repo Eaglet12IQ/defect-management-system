@@ -3,7 +3,7 @@ from sqlalchemy.orm import sessionmaker
 import os
 
 # Укажите URL для подключения к БД
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:12345@localhost:5432/marki")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:12345@localhost:5432/defect")
 
 # Создайте движок для подключения к БД
 engine = create_engine(
