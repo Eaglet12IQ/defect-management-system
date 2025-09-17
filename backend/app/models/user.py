@@ -3,7 +3,7 @@ from fastapi import HTTPException, Response, Request
 from sqlalchemy.orm import relationship, Session
 from .base import Base
 from app.models.role import Role # for model
-from app.models.collector import Collector
+from app.models.profile import Profile
 import os
 from app.core.security import get_payload_from_refresh_token
 from app.schemas.user import UserLoginWithPasswordValidation, UserCreateWithPasswordValidation
@@ -23,18 +23,24 @@ class User(Base):
     
     # Связь "многие к одному" с ролями
     role = relationship("Role", back_populates="users")
-    collector = relationship("Collector", back_populates="user", uselist=False, cascade="all, delete")  # <-- Add this)
+    profile = relationship("Profile", back_populates="user", uselist=False, cascade="all, delete")  # <-- Add this)
+
+    created_defects = relationship("Defect", back_populates="creator", foreign_keys="Defect.creator_id")
+    managed_projects = relationship("Project", back_populates="manager")
+
+    audit_logs = relationship("AuditLog", back_populates="user")
+    reports = relationship("Report", back_populates="user", foreign_keys="Report.user_id")
 
     def delete(db: Session, response: Response, request: Request):
         payload = get_payload_from_refresh_token(request)
         access_user_id = payload.get("sub")
         user = User.get_user(db, access_user_id)
-        collector = Collector.get_collector(db, access_user_id)
+        profile = Profile.get_profile(db, access_user_id)
         if not user:
             raise HTTPException(status_code=401, detail="Пользователь не найден с таким ID!")
         
-        if collector.avatar_url and collector.avatar_url != DEFAULT_AVATAR:
-            avatar_filename = os.path.basename(collector.avatar_url)  # извлекаем имя файла
+        if profile.avatar_url and profile.avatar_url != DEFAULT_AVATAR:
+            avatar_filename = os.path.basename(profile.avatar_url)  # извлекаем имя файла
             avatar_path = os.path.join(AVATAR_FOLDER, avatar_filename)
             if os.path.exists(avatar_path):
                 try:
@@ -127,8 +133,8 @@ class User(Base):
         db.add(db_user)
         db.commit()
         db.refresh(db_user)
-        db_collector = Collector(user_id=db_user.id)
-        db.add(db_collector)
+        db_profile = Profile(user_id=db_user.id)
+        db.add(db_profile)
         db.commit()
 
             # Генерируем токены для нового пользователя

@@ -8,6 +8,11 @@ from alembic import context
 from app.models.base import Base
 from app.models.user import User
 from app.models.role import Role
+from app.models.defect import Defect
+from app.models.profile import Profile
+from app.models.project import Project
+from app.models.auditlog import AuditLog
+from app.models.report import Report
 
 # Установите target_metadata
 target_metadata = Base.metadata
@@ -39,7 +44,7 @@ def run_migrations_offline() -> None:
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
     # Используем DATABASE_URL из переменной окружения
-    database_url = os.getenv("DATABASE_URL")
+    database_url = os.getenv("DATABASE_URL", "postgresql://postgres:12345@localhost:5432/defect")
     if not database_url:
         raise ValueError("DATABASE_URL environment variable is not set")
 

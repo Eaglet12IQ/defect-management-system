@@ -27,68 +27,8 @@ async def auto_refresh_token_middleware(request: Request, call_next):
         request.url.path
     ) is not None
 
-    is_collections_delete_path = re.match(
-        r'^/api/collections/delete/\d+$',  # \d+ — только цифры для user_id
-        request.url.path
-    ) is not None
-
-    is_collections_update_path = re.match(
-        r'^/api/collections/update/\d+$',  # \d+ — только цифры для user_id
-        request.url.path
-    ) is not None
-
-    is_stamps_update_path = re.match(
-        r'^/api/stamps/update/\d+$',  # \d+ — только цифры для user_id
-        request.url.path
-    ) is not None
-
-    is_stamps_delete_path = re.match(
-        r'^/api/stamps/delete/\d+$',  # \d+ — только цифры для user_id
-        request.url.path
-    ) is not None
-
-    is_users_update_path = re.match(
-        r'^/api/profiles/users/\d+$',  # \d+ — только цифры для user_id
-        request.url.path
-    ) is not None
-
-    is_profiles_update_path = re.match(
-        r'^/api/profiles/collectors/\d+$',  # \d+ — только цифры для user_id
-        request.url.path
-    ) is not None
-
-    is_collections_create_path = re.match(
-        r'^/api/collections/create$',  # \d+ — только цифры для user_id
-        request.url.path
-    ) is not None
-
-    is_stamps_create_path = re.match(
-        r'^/api/stamps/create$',  # \d+ — только цифры для user_id
-        request.url.path
-    ) is not None
-
-    is_collector_settings_path = re.match(
-        r'^/api/profiles/\d+/collector_settings$',  # \d+ — только цифры для user_id
-        request.url.path
-    ) is not None
-
-    is_change_avatar_path = re.match(
-        r'^/api/profiles/\d+/change_avatar$',  # \d+ — только цифры для user_id
-        request.url.path
-    ) is not None
-
-    is_logout_path = re.match(
-        r'^/api/auth/logout$',  # \d+ — только цифры для user_id
-        request.url.path
-    ) is not None
-
-    is_delete_path = re.match(
-        r'^/api/auth/delete$',  # \d+ — только цифры для user_id
-        request.url.path
-    ) is not None
-
     # Если путь исключен И НЕ является /api/profiles/{user_id}/settings
-    if any(request.url.path.startswith(p) for p in EXCLUDED_PATHS) and not is_user_settings_path and not is_stamps_update_path and not is_profiles_update_path and not is_users_update_path and not is_collections_update_path and not is_stamps_delete_path and not is_collections_delete_path and not is_stamps_create_path and not is_collections_create_path and not is_change_avatar_path and not is_collector_settings_path and not is_logout_path and not is_delete_path:
+    if any(request.url.path.startswith(p) for p in EXCLUDED_PATHS) and not is_user_settings_path:
         return await call_next(request)
     
     # Остальная логика middleware...
