@@ -1,10 +1,17 @@
 from sqlalchemy import Column, Integer, String, ForeignKey
-from fastapi import HTTPException, Response, Request
+from fastapi import HTTPException, Response, Request, status
 from sqlalchemy.orm import relationship, Session
 from .base import Base
 from app.models.role import Role # for model
 from app.models.profile import Profile
+from .defect import Defect
+from .project import Project
+from .auditlog import AuditLog
+from .report import Report
 import os
+from fastapi.responses import JSONResponse
+import shutil
+import uuid
 from app.core.security import get_payload_from_refresh_token
 from app.schemas.user import UserLoginWithPasswordValidation, UserCreateWithPasswordValidation
 from app.core.security import verify_password, create_access_token, create_refresh_token, REFRESH_TOKEN_EXPIRE_DAYS, get_password_hash
@@ -20,7 +27,7 @@ class User(Base):
     username = Column(String, unique=True, index=True, nullable=False)  # Новое поле
     hashed_password = Column(String, nullable=False)
     role_id = Column(Integer, ForeignKey("roles.id"), nullable=False, default=2)
-    
+
     # Связь "многие к одному" с ролями
     role = relationship("Role", back_populates="users")
     profile = relationship("Profile", back_populates="user", uselist=False, cascade="all, delete")  # <-- Add this)
@@ -38,7 +45,7 @@ class User(Base):
         profile = Profile.get_profile(db, access_user_id)
         if not user:
             raise HTTPException(status_code=401, detail="Пользователь не найден с таким ID!")
-        
+
         if profile.avatar_url and profile.avatar_url != DEFAULT_AVATAR:
             avatar_filename = os.path.basename(profile.avatar_url)  # извлекаем имя файла
             avatar_path = os.path.join(AVATAR_FOLDER, avatar_filename)
@@ -47,12 +54,12 @@ class User(Base):
                     os.remove(avatar_path)
                 except Exception as e:
                     raise HTTPException(status_code=500, detail=f"Ошибка при удалении аватарки: {str(e)}")
-        
+
         response.delete_cookie(
             key="refresh_token",
             secure=False,  # Обязательно, если кука устанавливалась с secure=True
             httponly=True,  # Если использовалось при установке
-            samesite="lax",  
+            samesite="lax",
         )
 
         db.delete(user)
@@ -61,20 +68,25 @@ class User(Base):
         return {
             "message": "Пользователь удален.",
         }
-    
+
     def login(db: Session, response: Response, user: UserLoginWithPasswordValidation):
         user_bd = db.query(User).filter((User.email == user.username) | (User.username == user.username)).first()
 
         if not user_bd:
             raise HTTPException(status_code=400, detail="Пользователь не найден!")
-        
+
         if not verify_password(user.password, user_bd.hashed_password):
             raise HTTPException(status_code=400, detail="Пароль введен неверно!")
         
+        # Получить профиль для аватарки
+        profile = Profile.get_profile(db, user_bd.id)
+        avatar_url = profile.avatar_url if profile else DEFAULT_AVATAR
+
         access_token = create_access_token(data={
             "sub": str(user_bd.id),
             "role": user_bd.role_id,  # или user_bd.role_id, если имя не доступно
-            "username": user_bd.username
+            "username": user_bd.username,
+            "avatar": "http://localhost:8000" + avatar_url
         })
         refresh_token = create_refresh_token(data={
             "sub": str(user_bd.id),
@@ -85,91 +97,84 @@ class User(Base):
             key="refresh_token",
             value=refresh_token,
             httponly=True,
-            secure=False,  
-            samesite="lax",  
+            secure=False,
+            samesite="lax",
             max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 3600,
         )
 
         return {
             "message": "Пользователь авторизован.",
             "access_token": access_token,
-            "token_type": "bearer",
-            "username": user_bd.username,
-            "email": user_bd.email
+            "token_type": "bearer"
         }
-    
+
     def logout(db: Session, request: Request, response: Response):
         payload = get_payload_from_refresh_token(request)
         access_user_id = payload.get("sub")
-        
+
         user = db.query(User).filter(User.id == int(access_user_id)).first()
         if not user:
             raise HTTPException(status_code=401, detail="Пользователь не найден с таким ID!")
-        
+
         response.delete_cookie(
             key="refresh_token",
-            httponly=True,  # Если использовалось при установке 
-            samesite="lax",  
+            httponly=True,  # Если использовалось при установке
+            samesite="lax",
             secure=False,  # Обязательно, если кука устанавливалась с secure=True
         )
 
         return {
             "message": "Пользователь вышел из системы.",
         }
-    
-    def register(db: Session, response: Response, user: UserCreateWithPasswordValidation):
-        if user.password != user.re_password:
-            raise HTTPException(status_code=400, detail="Пароли не совпадают!")
-        db_user_email = db.query(User).filter(User.email == user.email).first()
-        db_user_username = db.query(User).filter(User.username == user.username).first()
-        if db_user_email or db_user_username:
-            raise HTTPException(status_code=400, detail="Почта или логин уже зарезервированы!")
-        
-        # Хэширование пароля
-        hashed_password = get_password_hash(user.password)
-        
-        # Создание нового пользователя
-        db_user = User(email=user.email, username=user.username, hashed_password=hashed_password)
+
+    def register(db, response, username, email, password, re_password, first_name, last_name, middle_name, role, avatar):
+        # Validate required fields
+        if not first_name or not last_name:
+            return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"detail": "Имя и фамилия обязательны для заполнения!"})
+
+        # Validate passwords match
+        if password != re_password:
+            return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"detail": "Пароли не совпадают!"})
+
+        # Check if email or username already exists
+        if db.query(User).filter(User.email == email).first() or db.query(User).filter(User.username == username).first():
+            return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"detail": "Почта или логин уже зарезервированы!"})
+
+        # Hash password
+        hashed_password = get_password_hash(password)
+
+        # Create new user
+        db_user = User(email=email, username=username, hashed_password=hashed_password, role_id=role)
         db.add(db_user)
         db.commit()
         db.refresh(db_user)
-        db_profile = Profile(user_id=db_user.id)
+
+        # Handle avatar upload
+        avatar_url = "/static/avatars/default_avatar.png"
+        if avatar:
+            filename = f"{uuid.uuid4().hex}_{avatar.filename}"
+            avatar_path = os.path.join("static", "avatars", filename)
+            with open(avatar_path, "wb") as buffer:
+                shutil.copyfileobj(avatar.file, buffer)
+            avatar_url = f"/static/avatars/{filename}"
+
+        # Create profile with avatar and names
+        db_profile = Profile(
+            user_id=db_user.id,
+            first_name=first_name,
+            last_name=last_name,
+            middle_name=middle_name,
+            avatar_url=avatar_url
+        )
         db.add(db_profile)
         db.commit()
 
-            # Генерируем токены для нового пользователя
-        access_token = create_access_token(data={
-            "sub": str(db_user.id),
-            "role": db_user.role_id,  # или user_bd.role_id, если имя не доступно
-            "username": db_user.username
-        })
-        refresh_token = create_refresh_token(data={
-            "sub": str(db_user.id),
-            "role": db_user.role_id
-        })
-        
-        # Устанавливаем refresh token в куки
-        response.set_cookie(
-            key="refresh_token",
-            value=refresh_token,
-            httponly=True,
-            secure=False,
-            samesite="lax",  
-            max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 3600,
-        )
-        
         return {
-            "message": "Пользователь зарегистрирован и авторизован.",
-            "access_token": access_token,
-            "token_type": "bearer",
-            "username": db_user.username,
-            "email": db_user.email,
-            "id": db_user.id,
+            "message": "Пользователь зарегистрирован и авторизован."
         }
-    
+
     def get_user(db: Session, user_id):
         user = db.query(User).filter(User.id == user_id).first()
         if not user:
             raise HTTPException(status_code=400, detail="Пользователь не найден с таким ID!")
-        
         return user

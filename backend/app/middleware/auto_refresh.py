@@ -5,6 +5,7 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.user import User
+from app.models.profile import Profile
 from app.core.security import (
     SECRET_KEY,
     ALGORITHM,
@@ -18,6 +19,7 @@ EXCLUDED_PATHS = [
     "/docs", 
     "/openapi.json", 
     "/redoc",
+    "/api/auth/login",
 ]
 
 async def auto_refresh_token_middleware(request: Request, call_next):
@@ -83,5 +85,14 @@ async def refresh_access_token(refresh_token: str, db: Session):
     if not user:
         raise HTTPException(status_code=401, detail="Пользователь не найден")
     
-    new_access_token = create_access_token(data={"sub": str(user.id)})
+    profile = Profile.get_profile(db, user.id)
+    avatar_url = profile.avatar_url
+    
+    new_access_token = create_access_token(data={
+        "sub": str(user.id),
+        "role": user.role_id,  # или user_bd.role_id, если имя не доступно
+        "username": user.username,
+        "avatar": "http://localhost:8000" + avatar_url
+    })
+    
     return new_access_token

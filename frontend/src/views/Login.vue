@@ -15,14 +15,14 @@
         <form @submit.prevent="handleLogin" class="space-y-6">
           <div>
             <label class="block text-sm font-medium text-white/80 mb-2">
-              Email
+              Email или Username
             </label>
             <input
-              v-model="email"
-              type="email"
+              v-model="username"
+              type="text"
               required
               class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 hover:border-gray-300 focus:scale-105"
-              placeholder="email@example.com"
+              placeholder="email@example.com или username"
             />
           </div>
 
@@ -58,23 +58,10 @@
           >
             {{ error }}
           </div>
-
-          <!-- Demo Credentials -->
-          <div class="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-xl text-sm animate-slide-down">
-            <p class="font-medium mb-2">Демо-аккаунты:</p>
-            <div class="space-y-1 text-xs">
-              <p><strong>Менеджер:</strong> a.petrov@systemcontrol.ru / password</p>
-              <p><strong>Инженер:</strong> m.ivanova@systemcontrol.ru / password</p>
-              <p><strong>Наблюдатель:</strong> e.kozlova@systemcontrol.ru / password</p>
-            </div>
-          </div>
         </form>
       </div>
 
-      <!-- Footer -->
-      <div class="text-center mt-8 text-white/60 text-sm animate-fade-in">
-        <p>&copy; 2024 СистемаКонтроля. Все права защищены.</p>
-      </div>
+
     </div>
 
     <!-- Background Animation -->
@@ -97,8 +84,8 @@ import { BuildingOfficeIcon } from '@heroicons/vue/24/outline';
 const router = useRouter();
 const { login } = useAuth();
 
-const email = ref('a.petrov@systemcontrol.ru');
-const password = ref('password');
+const username = ref('');
+const password = ref('');
 const isLoading = ref(false);
 const error = ref('');
 
@@ -107,12 +94,12 @@ const handleLogin = async () => {
   error.value = '';
 
   try {
-    const success = await login(email.value, password.value);
-    
-    if (success) {
+    const result = await login(username.value, password.value);
+
+    if (result === true) {
       router.push('/');
     } else {
-      error.value = 'Неверный email или пароль';
+      error.value = typeof result === 'string' ? result : 'Произошла ошибка при входе';
     }
   } catch (err) {
     error.value = 'Произошла ошибка при входе';

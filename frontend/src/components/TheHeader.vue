@@ -14,7 +14,7 @@
         </div>
 
         <!-- Navigation -->
-        <nav class="hidden md:flex items-center space-x-1">
+        <nav class="hidden md:flex items-center justify-center space-x-1 flex-1">
           <router-link
             v-for="item in navigationItems"
             :key="item.name"
@@ -28,22 +28,29 @@
         </nav>
 
         <!-- User Menu -->
-        <div class="flex items-center space-x-4">
+          <div class="flex items-center space-x-1">
           <!-- User Avatar -->
-          <div 
-            @click="goToProfile"
-            class="flex items-center space-x-3 cursor-pointer hover:bg-white/10 rounded-lg p-2 transition-all duration-200"
-          >
-            <img
-              :src="currentUser?.avatar || 'https://images.pexels.com/photos/1674752/pexels-photo-1674752.jpeg?auto=compress&cs=tinysrgb&w=40&h=40&dpr=2'"
-              :alt="currentUser?.name"
-              class="w-8 h-8 rounded-full border-2 border-white/20 hover:border-white/40 transition-all duration-200"
-            />
-            <div class="hidden sm:block">
-              <p class="text-sm font-medium text-white hover:text-white/80 transition-colors duration-200">{{ currentUser?.name }}</p>
-              <p class="text-xs text-white/70 capitalize">{{ currentUser?.role }}</p>
-            </div>
-          </div>
+  <div
+    class="flex items-center space-x-1 rounded-lg p-2"
+  >
+    <img
+      :src="userData?.avatar || 'https://images.pexels.com/photos/1674752/pexels-photo-1674752.jpeg?auto=compress&cs=tinysrgb&w=40&h=40&dpr=2'"
+      :alt="userData?.username"
+      class="w-8 h-8 rounded-full border-2 border-white/20 hover:border-white/40 transition-all duration-200"
+    />
+    <div class="hidden sm:block flex items-center h-9">
+      <p class="text-sm font-medium text-white hover:text-white/80 transition-colors duration-200 leading-8">
+        {{ userData?.username }}
+      </p>
+    </div>
+    <button
+      @click="handleLogout"
+      title="Выйти из аккаунта"
+      class="ml-3 p-1 rounded-md text-white hover:text-red-500 transition-colors duration-200"
+    >
+      <ArrowRightOnRectangleIcon class="w-6 h-6" />
+    </button>
+  </div>
 
           <!-- Mobile menu button -->
           <button
@@ -78,6 +85,13 @@
               <component :is="item.icon" class="w-5 h-5 mr-3" />
               {{ item.name }}
             </router-link>
+            <button
+              @click="handleLogout"
+              class="flex items-center px-4 py-3 rounded-lg text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200"
+            >
+              <ArrowRightOnRectangleIcon class="w-5 h-5 mr-3" />
+              Выйти
+            </button>
           </div>
         </div>
       </transition>
@@ -86,7 +100,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuth } from '../composables/useAuth';
 import {
@@ -96,19 +110,42 @@ import {
   ExclamationTriangleIcon,
   ChartBarIcon,
   Bars3Icon,
-  XMarkIcon
+  XMarkIcon,
+  ArrowRightOnRectangleIcon
 } from '@heroicons/vue/24/outline';
 
-const { currentUser } = useAuth();
+const decodeJWT = (token: string) => {
+  const payload = token.split('.')[1];
+  const decoded = JSON.parse(atob(payload));
+  return decoded;
+};
+
+const userData = computed(() => {
+  const token = localStorage.getItem('access_token');
+  if (token) {
+    return decodeJWT(token);
+  }
+  return null;
+});
+
+const { logout } = useAuth();
 const router = useRouter();
 const showMobileMenu = ref(false);
 
-const navigationItems = [
-  { name: 'Дашборд', path: '/', icon: HomeIcon },
-  { name: 'Проекты', path: '/projects', icon: FolderOpenIcon },
-  { name: 'Дефекты', path: '/defects', icon: ExclamationTriangleIcon },
-  { name: 'Аналитика', path: '/analytics', icon: ChartBarIcon },
-];
+const navigationItems = computed(() => {
+  const allItems = [
+    { name: 'Дашборд', path: '/', icon: HomeIcon },
+    { name: 'Проекты', path: '/projects', icon: FolderOpenIcon },
+    { name: 'Дефекты', path: '/defects', icon: ExclamationTriangleIcon },
+    { name: 'Аналитика', path: '/analytics', icon: ChartBarIcon },
+  ];
+
+  if (userData.value?.role === 4) {
+    return allItems.filter(item => item.name === 'Дашборд');
+  }
+
+  return allItems;
+});
 
 const toggleMobileMenu = () => {
   showMobileMenu.value = !showMobileMenu.value;
@@ -116,5 +153,10 @@ const toggleMobileMenu = () => {
 
 const goToProfile = () => {
   router.push('/profile');
+};
+
+const handleLogout = async () => {
+  await logout();
+  router.push('/login');
 };
 </script>

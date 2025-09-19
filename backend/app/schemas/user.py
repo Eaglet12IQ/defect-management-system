@@ -9,6 +9,10 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str
     re_password: str
+    first_name: str | None = None
+    last_name: str | None = None
+    middle_name: str | None = None
+    role: int
 
 # Схема для аутентификации
 class UserLogin(BaseModel):
@@ -28,14 +32,14 @@ class UserCreateWithPasswordValidation(UserCreate):
     @field_validator('password')
     def validate_password_length(cls, v):
         if len(v) < 8:
-            raise ValueError('Password must be at least 8 characters')
+            raise ValueError('Пароль должен содержать не менее 8 символов!')
         return v
 
 class UserLoginWithPasswordValidation(UserLogin):
     @field_validator('password')
     def validate_password_length(cls, v):
         if len(v) < 8:
-            raise ValueError('Password must be at least 8 characters')
+            raise ValueError('Пароль должен содержать не менее 8 символов!')
         return v
     
     @field_validator('username')

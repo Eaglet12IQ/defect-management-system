@@ -77,6 +77,10 @@ def upgrade() -> None:
         ]
     )
 
+    op.execute(
+        "SELECT setval(pg_get_serial_sequence('users', 'id'), (SELECT MAX(id) FROM users));"
+    )
+
     # Create profiles table
     op.create_table(
         'profiles',

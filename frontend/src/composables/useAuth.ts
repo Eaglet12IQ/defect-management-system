@@ -1,34 +1,69 @@
-import { ref, reactive } from 'vue';
-import { readonly } from 'vue';
-import { mockUsers, type User } from '../data/mockData';
+import { ref, readonly } from 'vue';
+import { api } from '../utils/api';
 
-const currentUser = ref<User | null>(mockUsers[0]);
-const isAuthenticated = ref(true);
+interface User {
+  username: string;
+  avatar?: string;
+  role?: string;
+}
+
+const currentUser = ref<User | null>(null);
+const isAuthenticated = ref(false);
+
+function decodeJWT(token: string) {
+  const payload = token.split('.')[1];
+  const decoded = JSON.parse(atob(payload));
+  return decoded;
+}
+
+function loadUserFromStorage() {
+  const token = localStorage.getItem('access_token');
+  if (token) {
+    const decoded = decodeJWT(token);
+    currentUser.value = {
+      username: decoded.username,
+      avatar: '',
+      role: String(decoded.role),
+    };
+    isAuthenticated.value = true;
+  }
+}
 
 export function useAuth() {
-  const login = async (email: string, password: string): Promise<boolean> => {
-    // Имитация запроса к API
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const user = mockUsers.find(u => u.email === email);
-    if (user && password === 'password') {
-      currentUser.value = user;
+  loadUserFromStorage();
+
+  const login = async (username: string, password: string): Promise<boolean | string> => {
+    try {
+      const response = await api.post('/auth/login', { username, password });
+      if (response.error) {
+        return response.error;
+      }
+      const { access_token, username: userName, avatar } = response.data;
+      localStorage.setItem('access_token', access_token);
+      const decoded = decodeJWT(access_token);
+      currentUser.value = { username: userName, avatar, role: String(decoded.role) };
       isAuthenticated.value = true;
       return true;
+    } catch (error) {
+      return error instanceof Error ? error.message : 'Неизвестная ошибка';
     }
-    
-    return false;
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await api.post('/auth/logout', {});
+    } catch {
+      // ignore errors on logout
+    }
+    localStorage.removeItem('access_token');
     currentUser.value = null;
     isAuthenticated.value = false;
   };
 
   const getCurrentUser = () => currentUser.value;
-  
+
   const hasRole = (role: string | string[]) => {
-    if (!currentUser.value) return false;
+    if (!currentUser.value || !currentUser.value.role) return false;
     if (Array.isArray(role)) {
       return role.includes(currentUser.value.role);
     }
@@ -41,6 +76,6 @@ export function useAuth() {
     login,
     logout,
     getCurrentUser,
-    hasRole
+    hasRole,
   };
 }

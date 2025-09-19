@@ -41,7 +41,7 @@ class Defect(Base):
 
     # Creator linkage
     creator_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    creator = relationship("User", backref="created_defects", foreign_keys=[creator_id])
+    creator = relationship("User", back_populates="created_defects")
 
     project_id = Column(Integer, ForeignKey("projects.id"), nullable=False, index=True)
     project = relationship("Project", back_populates="defects")

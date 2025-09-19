@@ -17,5 +17,5 @@ class Report(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     # Relationships
-    user = relationship("User", backref="reports", foreign_keys=[user_id])
+    user = relationship("User", back_populates="reports")
     project = relationship("Project", back_populates="reports")
