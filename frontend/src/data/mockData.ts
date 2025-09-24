@@ -24,7 +24,7 @@ export interface Defect {
   id: string;
   title: string;
   description: string;
-  status: 'new' | 'in-progress' | 'review' | 'closed' | 'cancelled';
+  status: 'Новый' | 'В работе' | 'На проверке' | 'Закрыт' | 'Отменен';
   priority: 'low' | 'medium' | 'high' | 'critical';
   projectId: string;
   assignee: string;
@@ -140,7 +140,7 @@ export const mockDefects: Defect[] = [
     id: '1',
     title: 'Трещина в стене на 5 этаже',
     description: 'Обнаружена горизонтальная трещина длиной около 1.2 метра в несущей стене корпуса А, 5 этаж, квартира 51.',
-    status: 'new',
+    status: 'Новый',
     priority: 'high',
     projectId: '1',
     assignee: 'Мария Иванова',
@@ -165,7 +165,7 @@ export const mockDefects: Defect[] = [
     id: '2',
     title: 'Протечка кровли в корпусе Б',
     description: 'Протечка воды через кровельное покрытие в районе технического этажа. Возможное нарушение гидроизоляции.',
-    status: 'in-progress',
+    status: 'В работе',
     priority: 'critical',
     projectId: '1',
     assignee: 'Дмитрий Смирнов',
@@ -196,7 +196,7 @@ export const mockDefects: Defect[] = [
     id: '3',
     title: 'Неровность пола в офисном блоке',
     description: 'Значительные перепады уровня пола в офисных помещениях 3-го этажа. Превышение допустимых норм.',
-    status: 'review',
+    status: 'На проверке',
     priority: 'medium',
     projectId: '2',
     assignee: 'Мария Иванова',
@@ -214,7 +214,7 @@ export const mockDefects: Defect[] = [
     id: '4',
     title: 'Неисправность вентиляционной системы',
     description: 'Отсутствует тяга в вентиляционных каналах подземного паркинга. Нарушение воздухообмена.',
-    status: 'closed',
+    status: 'Закрыт',
     priority: 'high',
     projectId: '1',
     assignee: 'Дмитрий Смирнов',

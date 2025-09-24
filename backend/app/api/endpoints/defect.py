@@ -13,39 +13,32 @@ class ProjectCreate(BaseModel):
     name: str
     description: str
     manager_id: int
+    status: str = "Планирование"
 
-class ProjectEdit(BaseModel):
+class ProjectEdit(ProjectCreate):
     project_id: int
-    name: str
-    description: str
-    status: str
-    manager_id: int | None = None  # Optional for managers
 
-@router.get("/managers")
-async def get_managers(response: Response, request: Request, db: Session = Depends(get_db)):
+@router.get("/projects")
+async def get_projects(response: Response, request: Request, db: Session = Depends(get_db)):
     payload = get_payload_from_refresh_token(request)
     role_id = payload.get("role")
 
-    if role_id != 3:
+    if role_id != 1:
         raise HTTPException(status_code=403, detail="Отказано в доступе!")
 
-    managers = User.get_managers(db)
+    projects = Project.get_project(db, None)
 
     result = []
-    for manager in managers:
-        profile = Profile.get_profile(db, manager.id)
+    for project in projects:
         result.append({
-            "id": manager.id,
-            "username": manager.username,
-            "first_name": profile.first_name if profile else "",
-            "last_name": profile.last_name if profile else "",
-            "role": manager.role_id
+            "id": project.id,
+            "name": project.name,
         })
 
     return result
 
-@router.post("/create_project")
-async def create_project(project_data: ProjectCreate, response: Response, request: Request, db: Session = Depends(get_db)):
+@router.post("/create_defect")
+async def create_defect(project_data: ProjectCreate, response: Response, request: Request, db: Session = Depends(get_db)):
     payload = get_payload_from_refresh_token(request)
     role_id = payload.get("role")
 
@@ -56,58 +49,38 @@ async def create_project(project_data: ProjectCreate, response: Response, reques
     if not manager:
         raise HTTPException(status_code=400, detail="Менеджер не найден!")
 
-    Project.create_project(db, project_data.name, project_data.description, project_data.manager_id)
+    Project.create_project(db, project_data.name, project_data.description, project_data.manager_id, project_data.status)
 
     return {
         "message": "Новый проект создан."
     }
 
-@router.put("/edit_project")
-async def edit_project(project_data: ProjectEdit, response: Response, request: Request, db: Session = Depends(get_db)):
+@router.put("/edit_defect")
+async def edit_defect(project_data: ProjectEdit, response: Response, request: Request, db: Session = Depends(get_db)):
     payload = get_payload_from_refresh_token(request)
-    user_id = int(payload.get("sub"))
     role_id = payload.get("role")
 
-    # Get the project to check permissions
-    project = Project.get_project(db, project_data.project_id)
-    if not project:
-        raise HTTPException(status_code=404, detail="Проект не найден!")
-
-    # Check permissions
-    if role_id == 3:  # Admin can edit any project
-        pass
-    elif role_id == 2:  # Manager can only edit their own projects
-        if project.manager_id != user_id:
-            raise HTTPException(status_code=403, detail="Отказано в доступе!")
-        # Managers cannot change the manager_id field (if they try to provide one)
-        if project_data.manager_id is not None and project_data.manager_id != project.manager_id:
-            raise HTTPException(status_code=403, detail="Менеджеры не могут изменять прикрепленного менеджера!")
-    else:
+    if role_id != 3:
         raise HTTPException(status_code=403, detail="Отказано в доступе!")
+    
+    manager = User.get_user(db, project_data.manager_id)
+    if not manager:
+        raise HTTPException(status_code=400, detail="Менеджер не найден!")
 
-    # For managers, use the existing manager_id, for admins use the provided one
-    final_manager_id = project.manager_id if role_id == 2 else project_data.manager_id
-
-    # Validate manager exists only for admins
-    if role_id == 3:
-        manager = User.get_user(db, final_manager_id)
-        if not manager:
-            raise HTTPException(status_code=400, detail="Менеджер не найден!")
-
-    Project.edit_project(db, project_data.project_id, project_data.name, project_data.description, final_manager_id, project_data.status)
+    Project.edit_project(db, project_data.project_id, project_data.name, project_data.description, project_data.manager_id, project_data.status)
 
     return {
         "message": "Проект изменен."
     }
 
-@router.get("/projects")
-async def get_projects(
+@router.get("/defects")
+async def get_defects(
     request: Request,
     db: Session = Depends(get_db)
 ):
     # Get user from token
     payload = get_payload_from_refresh_token(request)
-    user_id = int(payload.get("sub"))
+    user_id = payload.get("sub")
     role_id = payload.get("role")
 
     # If user is manager (role 2), show only their projects
@@ -130,15 +103,15 @@ async def get_projects(
 
     return result
 
-@router.get("/projects/{project_id}")
-async def get_project_by_id(
+@router.get("/defects/{defect_id}")
+async def get_defect_by_id(
     project_id: int,
     request: Request,
     db: Session = Depends(get_db)
 ):
     # Get user from token
     payload = get_payload_from_refresh_token(request)
-    user_id = int(payload.get("sub"))
+    user_id = payload.get("sub")
     role_id = payload.get("role")
 
     # Get the project

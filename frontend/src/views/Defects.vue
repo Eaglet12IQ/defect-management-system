@@ -36,10 +36,11 @@
             class="px-4 py-3 border border-white/20 rounded-xl bg-white/50 backdrop-blur focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
           >
             <option value="">Все статусы</option>
-            <option value="new">Новые</option>
-            <option value="in-progress">В работе</option>
-            <option value="review">На проверке</option>
-            <option value="closed">Закрыто</option>
+            <option value="Новый">Новый</option>
+            <option value="В работе">В работе</option>
+            <option value="На проверке">На проверке</option>
+            <option value="Закрыт">Закрыт</option>
+            <option value="Отменен">Отменен</option>
           </select>
 
           <!-- Priority Filter -->
@@ -66,18 +67,7 @@
           </select>
         </div>
 
-        <!-- Quick Filters -->
-        <div class="flex flex-wrap gap-2 mt-4">
-          <button
-            v-for="filter in quickFilters"
-            :key="filter.key"
-            @click="applyQuickFilter(filter)"
-            class="px-4 py-2 text-sm font-medium rounded-lg bg-white/30 hover:bg-white/50 text-white hover:text-white transition-all duration-200"
-            :class="{ 'bg-white text-primary-600': isQuickFilterActive(filter) }"
-          >
-            {{ filter.label }}
-          </button>
-        </div>
+
       </div>
 
       <!-- Results Summary -->
@@ -233,14 +223,7 @@ const priorityFilter = ref('');
 const projectFilter = ref('');
 const viewMode = ref<'grid' | 'list'>('grid');
 
-const quickFilters = [
-  { key: 'critical', label: 'Критические', filter: { priority: 'critical' } },
-  { key: 'overdue', label: 'Просроченные', filter: { overdue: true } },
-  { key: 'my', label: 'Мои задачи', filter: { assignee: 'current' } },
-  { key: 'new', label: 'Новые', filter: { status: 'new' } }
-];
 
-const activeQuickFilter = ref('');
 
 const filteredDefects = computed(() => {
   let result = [...defects];
@@ -273,28 +256,7 @@ const filteredDefects = computed(() => {
   return result;
 });
 
-const applyQuickFilter = (filter: any) => {
-  if (activeQuickFilter.value === filter.key) {
-    // Reset filter
-    activeQuickFilter.value = '';
-    statusFilter.value = '';
-    priorityFilter.value = '';
-    return;
-  }
 
-  activeQuickFilter.value = filter.key;
-  
-  if (filter.filter.status) {
-    statusFilter.value = filter.filter.status;
-  }
-  if (filter.filter.priority) {
-    priorityFilter.value = filter.filter.priority;
-  }
-};
-
-const isQuickFilterActive = (filter: any) => {
-  return activeQuickFilter.value === filter.key;
-};
 
 const editDefect = (defect: Defect) => {
   console.log('Editing defect:', defect.id);
@@ -308,11 +270,11 @@ const viewDefect = (defect: Defect) => {
 
 const getStatusClass = (status: string) => {
   const classes = {
-    'new': 'status-new',
-    'in-progress': 'status-in-progress',
-    'review': 'status-review',
-    'closed': 'status-closed',
-    'cancelled': 'status-cancelled'
+    'Новый': 'status-new',
+    'В работе': 'status-in-progress',
+    'На проверке': 'status-under-review',
+    'Закрыт': 'status-closed',
+    'Отменен': 'status-cancelled'
   };
   return classes[status as keyof typeof classes] || 'status-new';
 };
@@ -329,11 +291,11 @@ const getPriorityClass = (priority: string) => {
 
 const getStatusText = (status: string) => {
   const texts = {
-    'new': 'Новая',
-    'in-progress': 'В работе',
-    'review': 'На проверке',
-    'closed': 'Закрыта',
-    'cancelled': 'Отменена'
+    'Новый': 'Новый',
+    'В работе': 'В работе',
+    'На проверке': 'На проверке',
+    'Закрыт': 'Закрыт',
+    'Отменен': 'Отменен'
   };
   return texts[status as keyof typeof texts] || 'Неизвестно';
 };

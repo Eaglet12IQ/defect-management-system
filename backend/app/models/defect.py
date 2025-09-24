@@ -14,11 +14,11 @@ class DefectPriorityEnum(str, PyEnum):  # type: ignore[misc]
     CRITICAL = "Критический"
 
 class DefectStatusEnum(str, PyEnum):  # type: ignore[misc]
-    NEW = "Новая"
+    NEW = "Новый"
     IN_PROGRESS = "В работе"
     UNDER_REVIEW = "На проверке"
-    CLOSED = "Закрыта"
-    CANCELED = "Отменена"
+    CLOSED = "Закрыт"
+    CANCELED = "Отменен"
 
 class Defect(Base):
     __tablename__ = "defects"

@@ -108,7 +108,6 @@ import {
   HomeIcon,
   FolderOpenIcon,
   ExclamationTriangleIcon,
-  ChartBarIcon,
   Bars3Icon,
   XMarkIcon,
   ArrowRightOnRectangleIcon
@@ -137,7 +136,6 @@ const navigationItems = computed(() => {
     { name: 'Дашборд', path: '/', icon: HomeIcon },
     { name: 'Проекты', path: '/projects', icon: FolderOpenIcon },
     { name: 'Дефекты', path: '/defects', icon: ExclamationTriangleIcon },
-    { name: 'Аналитика', path: '/analytics', icon: ChartBarIcon },
   ];
 
   if (userData.value?.role === 4) {

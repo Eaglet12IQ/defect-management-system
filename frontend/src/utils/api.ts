@@ -69,7 +69,24 @@ class ApiClient {
     }
   }
 
-  // Add other methods as needed (PUT, DELETE, etc.)
+  async put<T = any>(endpoint: string, body: any): Promise<ApiResponse<T>> {
+    try {
+      const response = await fetch(`${this.baseURL}${endpoint}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.getAuthHeaders(),
+        },
+        credentials: 'include', // Include cookies for refresh token
+        body: JSON.stringify(body),
+      });
+      return this.handleResponse<T>(response);
+    } catch (error) {
+      return { error: error instanceof Error ? error.message : 'Network error' };
+    }
+  }
+
+  // Add other methods as needed (DELETE, etc.)
 }
 
 export const api = new ApiClient(API_BASE_URL);

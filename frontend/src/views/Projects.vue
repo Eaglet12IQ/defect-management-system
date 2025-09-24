@@ -11,6 +11,7 @@
         </div>
         
         <button
+          v-if="hasRole('3')"
           @click="navigateToCreateProject"
           class="mt-4 sm:mt-0 bg-white text-primary-600 px-6 py-3 rounded-xl font-medium hover:bg-gray-50 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
         >
@@ -19,29 +20,7 @@
         </button>
       </div>
 
-      <!-- Stats -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <StatCard
-          title="Активные проекты"
-          :value="activeProjects.length"
-          :icon="FolderOpenIcon"
-          variant="primary"
-        />
-        <StatCard
-          title="Всего дефектов"
-          :value="totalDefects"
-          :icon="ExclamationTriangleIcon"
-          variant="warning"
-        />
-        <StatCard
-          title="Средний прогресс"
-          :value="averageProgress + '%'"
-          :icon="ChartBarIcon"
-          variant="success"
-          :show-progress="true"
-          :max-value="100"
-        />
-      </div>
+
 
       <!-- Loading State -->
       <div v-if="isLoading" class="flex items-center justify-center py-12">
@@ -70,7 +49,7 @@
           v-for="(project, index) in projects"
           :key="project.id"
           @click="navigateToProjectDetail(project.id)"
-          class="bg-white rounded-2xl shadow-card hover:shadow-lg hover:shadow-primary-500/10 hover:-translate-y-1 hover:border-primary-200 transition-all duration-300 overflow-hidden card-hover animate-slide-up hover-lift cursor-pointer border-2 border-transparent hover:border-primary-200"
+          class="bg-white rounded-2xl shadow-card hover:shadow-lg hover:shadow-primary-500/10 hover:-translate-y-1 hover:border-primary-500 transition-all duration-300 overflow-hidden card-hover animate-slide-up hover-lift cursor-pointer border-2 border-transparent hover:border-primary-500"
           :class="`animate-slide-up-delay-${Math.min(index + 1, 4)}`"
         >
           <!-- Project Header -->
@@ -80,8 +59,10 @@
                 <div class="flex items-center space-x-2 mb-2">
                   <h3 class="text-xl font-semibold text-gray-900">{{ project.name }}</h3>
                   <button
+                    v-if="canEditProject(project.manager_id)"
                     @click.stop="navigateToProjectEdit(project.id)"
                     class="p-1 text-gray-400 hover:text-primary-600 transition-colors duration-200 rounded-lg hover:bg-primary-50"
+                    title="Редактировать проект"
                   >
                     <PencilIcon class="w-4 h-4" />
                   </button>
@@ -147,6 +128,7 @@
         <h3 class="text-xl font-semibold text-white mb-2">Проектов пока нет</h3>
         <p class="text-white/70 mb-6">Создайте первый проект для начала работы</p>
         <button
+          v-if="hasRole('3')"
           @click="navigateToCreateProject"
           class="bg-white text-primary-600 px-6 py-3 rounded-xl font-medium hover:bg-gray-50 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
         >
@@ -162,17 +144,15 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { api } from '../utils/api';
+import { useAuth } from '../composables/useAuth';
 import TheHeader from '../components/TheHeader.vue';
-import StatCard from '../components/StatCard.vue';
 import {
-  FolderOpenIcon,
-  ExclamationTriangleIcon,
-  ChartBarIcon,
   PlusIcon,
   PencilIcon
 } from '@heroicons/vue/24/outline';
 
 const router = useRouter();
+const { hasRole } = useAuth();
 
 interface Project {
   id: string;
@@ -180,6 +160,7 @@ interface Project {
   description: string;
   status: 'Планирование' | 'Активный' | 'Завершен' | 'Приостановлен';
   manager: string;
+  manager_id: number;
   startDate: string;
   endDate?: string;
   progress: number;
@@ -216,6 +197,7 @@ const fetchProjects = async () => {
         description: apiProject.description,
         status: apiProject.status as 'Планирование' | 'Активный' | 'Завершен' | 'Приостановлен',
         manager: apiProject.manager_name,
+        manager_id: apiProject.manager_id,
         startDate: new Date().toISOString().split('T')[0], // Default date since API doesn't provide it
         progress: 0, // Default progress since API doesn't provide it
         defectsCount: 0, // Default defects count since API doesn't provide it
@@ -230,22 +212,30 @@ const fetchProjects = async () => {
   }
 };
 
+// Check if user can edit a project
+const canEditProject = (projectManagerId: number) => {
+  if (hasRole('3')) return true; // Admins can edit any project
+
+  // For managers, check if they are the manager of this project
+  const token = localStorage.getItem('access_token');
+  if (!token) return false;
+
+  try {
+    const payload = token.split('.')[1];
+    const decoded = JSON.parse(atob(payload));
+    const currentUserId = parseInt(decoded.sub);
+    return currentUserId === projectManagerId;
+  } catch (error) {
+    console.error('Error decoding token:', error);
+    return false;
+  }
+};
+
 onMounted(() => {
   fetchProjects();
 });
 
-const activeProjects = computed(() => {
-  return projects.value.filter((p: Project) => p.status === 'Активный');
-});
 
-const totalDefects = computed(() => {
-  return projects.value.reduce((sum: number, project: Project) => sum + project.defectsCount, 0);
-});
-
-const averageProgress = computed(() => {
-  if (projects.value.length === 0) return 0;
-  return Math.round(projects.value.reduce((sum: number, project: Project) => sum + project.progress, 0) / projects.value.length);
-});
 
 const getProjectStatusClass = (status: string) => {
   const classes = {
