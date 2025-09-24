@@ -6,7 +6,7 @@
       <!-- Welcome Section -->
       <div class="mb-8 animate-fade-in">
         <h2 class="text-3xl font-bold text-white mb-2">
-          {{ userRole === 4 ? 'Добро пожаловать, Super Admin!' : `Добро пожаловать, ${fio || currentUser?.username || 'Пользователь'}!` }}
+          {{ safeUserRole === 4 ? 'Добро пожаловать, Super Admin!' : `Добро пожаловать, ${fio || currentUser?.username || 'Пользователь'}!` }}
         </h2>
       </div>
 
@@ -275,7 +275,19 @@
           <div class="glass rounded-2xl p-6 animate-slide-up-delay-2">
             <h3 class="text-lg font-semibold text-white mb-4">Быстрые действия</h3>
             <div class="space-y-3">
-              <button class="w-full bg-primary-600 text-white px-4 py-3 rounded-xl font-medium hover:bg-primary-700 transition-all duration-200 transform hover:scale-105 flex items-center justify-center">
+              <!-- Show "New project" for role 3 (Руководитель), otherwise show "New defect" -->
+              <button
+                v-if="userRole === 3"
+                @click="navigateToCreateProject"
+                class="w-full bg-primary-600 text-white px-4 py-3 rounded-xl font-medium hover:bg-primary-700 transition-all duration-200 transform hover:scale-105 flex items-center justify-center"
+              >
+                <FolderPlusIcon class="w-5 h-5 mr-2" />
+                Новый проект
+              </button>
+              <button
+                v-else
+                class="w-full bg-primary-600 text-white px-4 py-3 rounded-xl font-medium hover:bg-primary-700 transition-all duration-200 transform hover:scale-105 flex items-center justify-center"
+              >
                 <PlusIcon class="w-5 h-5 mr-2" />
                 Новый дефект
               </button>
@@ -283,7 +295,12 @@
                 <DocumentTextIcon class="w-5 h-5 mr-2" />
                 Создать отчет
               </button>
-              <button class="w-full bg-white/20 text-white px-4 py-3 rounded-xl font-medium hover:bg-white/30 border border-white/30 transition-all duration-200 transform hover:scale-105 flex items-center justify-center hover:shadow-lg">
+              <!-- Hide "New project" button for role 3 (Руководитель) -->
+              <button
+                v-if="userRole !== 3"
+                @click="navigateToCreateProject"
+                class="w-full bg-white/20 text-white px-4 py-3 rounded-xl font-medium hover:bg-white/30 border border-white/30 transition-all duration-200 transform hover:scale-105 flex items-center justify-center hover:shadow-lg"
+              >
                 <FolderPlusIcon class="w-5 h-5 mr-2" />
                 Новый проект
               </button>
@@ -375,6 +392,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, reactive } from 'vue';
+import { useRouter } from 'vue-router';
 import { useAuth } from '../composables/useAuth';
 import { mockStats, mockDefects, type Defect } from '../data/mockData';
 import { api } from '../utils/api';
@@ -391,6 +409,8 @@ import {
   DocumentTextIcon,
   FolderPlusIcon
 } from '@heroicons/vue/24/outline';
+
+const router = useRouter();
 
 const { currentUser, hasRole } = useAuth();
 
@@ -414,6 +434,9 @@ const userRole = computed(() => {
   }
   return null;
 });
+
+// Helper computed for template usage to avoid type errors
+const safeUserRole = computed(() => userRole.value || 0);
 
 const stats = mockStats;
 const fio = ref<string>('');
@@ -623,6 +646,10 @@ const isOverdue = (dateString?: string) => {
 const viewDefect = (defect: Defect) => {
   console.log('Viewing defect:', defect.id);
   // Navigate to defect details
+};
+
+const navigateToCreateProject = () => {
+  router.push('/create-project');
 };
 </script>
 

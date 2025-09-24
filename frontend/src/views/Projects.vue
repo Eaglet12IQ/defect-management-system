@@ -10,7 +10,10 @@
           <p class="text-white/80">Управление строительными объектами</p>
         </div>
         
-        <button class="mt-4 sm:mt-0 bg-white text-primary-600 px-6 py-3 rounded-xl font-medium hover:bg-gray-50 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl">
+        <button
+          @click="navigateToCreateProject"
+          class="mt-4 sm:mt-0 bg-white text-primary-600 px-6 py-3 rounded-xl font-medium hover:bg-gray-50 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
+        >
           <PlusIcon class="w-5 h-5 inline-block mr-2" />
           Новый проект
         </button>
@@ -40,22 +43,52 @@
         />
       </div>
 
+      <!-- Loading State -->
+      <div v-if="isLoading" class="flex items-center justify-center py-12">
+        <div class="flex items-center space-x-3 text-white">
+          <div class="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+          <span>Загрузка проектов...</span>
+        </div>
+      </div>
+
+      <!-- Error State -->
+      <div v-else-if="errorMessage" class="text-center py-12 animate-fade-in">
+        <ExclamationTriangleIcon class="w-16 h-16 text-red-400 mx-auto mb-4" />
+        <h3 class="text-xl font-semibold text-white mb-2">Ошибка загрузки</h3>
+        <p class="text-white/70 mb-6">{{ errorMessage }}</p>
+        <button
+          @click="fetchProjects"
+          class="bg-white text-primary-600 px-6 py-3 rounded-xl font-medium hover:bg-gray-50 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
+        >
+          Попробовать снова
+        </button>
+      </div>
+
       <!-- Projects Grid -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div v-else class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         <div
           v-for="(project, index) in projects"
           :key="project.id"
-          class="bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-all duration-300 overflow-hidden card-hover animate-slide-up hover-lift"
+          @click="navigateToProjectDetail(project.id)"
+          class="bg-white rounded-2xl shadow-card hover:shadow-lg hover:shadow-primary-500/10 hover:-translate-y-1 hover:border-primary-200 transition-all duration-300 overflow-hidden card-hover animate-slide-up hover-lift cursor-pointer border-2 border-transparent hover:border-primary-200"
           :class="`animate-slide-up-delay-${Math.min(index + 1, 4)}`"
         >
           <!-- Project Header -->
           <div class="p-6 pb-4">
             <div class="flex items-start justify-between mb-4">
               <div class="flex-1">
-                <h3 class="text-xl font-semibold text-gray-900 mb-2">{{ project.name }}</h3>
+                <div class="flex items-center space-x-2 mb-2">
+                  <h3 class="text-xl font-semibold text-gray-900">{{ project.name }}</h3>
+                  <button
+                    @click.stop="navigateToProjectEdit(project.id)"
+                    class="p-1 text-gray-400 hover:text-primary-600 transition-colors duration-200 rounded-lg hover:bg-primary-50"
+                  >
+                    <PencilIcon class="w-4 h-4" />
+                  </button>
+                </div>
                 <p class="text-gray-600 text-sm line-clamp-2 mb-3">{{ project.description }}</p>
               </div>
-              
+
               <span
                 class="px-3 py-1 text-xs font-medium rounded-full border flex-shrink-0"
                 :class="getProjectStatusClass(project.status)"
@@ -64,20 +97,7 @@
               </span>
             </div>
 
-            <!-- Progress -->
-            <div class="mb-4">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-sm font-medium text-gray-700">Прогресс</span>
-                <span class="text-sm font-bold text-gray-900">{{ project.progress }}%</span>
-              </div>
-              <div class="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  class="h-2 rounded-full transition-all duration-1000 ease-out"
-                  :class="getProgressColorClass(project.status)"
-                  :style="{ width: `${project.progress}%` }"
-                ></div>
-              </div>
-            </div>
+
 
             <!-- Project Info -->
             <div class="grid grid-cols-2 gap-4 text-sm text-gray-600 mb-4">
@@ -88,10 +108,6 @@
               <div>
                 <span class="font-medium">Дефектов:</span>
                 <p class="mt-1 font-semibold">{{ project.defectsCount }}</p>
-              </div>
-              <div class="col-span-2">
-                <span class="font-medium">Период:</span>
-                <p class="mt-1">{{ formatDateRange(project.startDate, project.endDate) }}</p>
               </div>
             </div>
 
@@ -116,38 +132,24 @@
               </div>
 
               <div class="flex space-x-2">
-                <button class="p-2 text-gray-400 hover:text-primary-600 transition-colors duration-200 rounded-lg hover:bg-primary-50">
-                  <EyeIcon class="w-4 h-4" />
-                </button>
-                <button class="p-2 text-gray-400 hover:text-primary-600 transition-colors duration-200 rounded-lg hover:bg-primary-50">
-                  <PencilIcon class="w-4 h-4" />
-                </button>
+                <!-- Edit button moved to project title -->
               </div>
             </div>
           </div>
 
-          <!-- Project Footer -->
-          <div class="px-6 py-4 bg-gray-50 border-t">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center text-sm text-gray-500">
-                <CalendarIcon class="w-4 h-4 mr-1" />
-                Создан {{ formatDate(project.startDate) }}
-              </div>
-              
-              <button class="text-primary-600 hover:text-primary-700 text-sm font-medium hover:underline transition-all duration-200">
-                Подробнее
-              </button>
-            </div>
-          </div>
+
         </div>
       </div>
 
       <!-- Empty State -->
-      <div v-if="projects.length === 0" class="text-center py-12 animate-fade-in">
+      <div v-if="!isLoading && !errorMessage && projects.length === 0" class="text-center py-12 animate-fade-in">
         <FolderOpenIcon class="w-16 h-16 text-white/50 mx-auto mb-4" />
         <h3 class="text-xl font-semibold text-white mb-2">Проектов пока нет</h3>
         <p class="text-white/70 mb-6">Создайте первый проект для начала работы</p>
-        <button class="bg-white text-primary-600 px-6 py-3 rounded-xl font-medium hover:bg-gray-50 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl">
+        <button
+          @click="navigateToCreateProject"
+          class="bg-white text-primary-600 px-6 py-3 rounded-xl font-medium hover:bg-gray-50 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
+        >
           <PlusIcon class="w-5 h-5 inline-block mr-2" />
           Создать проект
         </button>
@@ -157,8 +159,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { mockProjects } from '../data/mockData';
+import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { api } from '../utils/api';
 import TheHeader from '../components/TheHeader.vue';
 import StatCard from '../components/StatCard.vue';
 import {
@@ -166,69 +169,120 @@ import {
   ExclamationTriangleIcon,
   ChartBarIcon,
   PlusIcon,
-  EyeIcon,
-  PencilIcon,
-  CalendarIcon
+  PencilIcon
 } from '@heroicons/vue/24/outline';
 
-const projects = mockProjects;
+const router = useRouter();
+
+interface Project {
+  id: string;
+  name: string;
+  description: string;
+  status: 'Планирование' | 'Активный' | 'Завершен' | 'Приостановлен';
+  manager: string;
+  startDate: string;
+  endDate?: string;
+  progress: number;
+  defectsCount: number;
+  team: any[];
+}
+
+interface ApiProject {
+  id: number;
+  name: string;
+  description: string;
+  manager_id: number;
+  manager_name: string;
+  status: string;
+}
+
+const projects = ref<Project[]>([]);
+const isLoading = ref(true);
+const errorMessage = ref('');
+
+const fetchProjects = async () => {
+  try {
+    isLoading.value = true;
+    errorMessage.value = '';
+    const response = await api.get('/projects');
+
+    if (response.error) {
+      errorMessage.value = response.error;
+    } else {
+      // Transform API response to match UI format
+      projects.value = response.data.map((apiProject: ApiProject) => ({
+        id: apiProject.id.toString(),
+        name: apiProject.name,
+        description: apiProject.description,
+        status: apiProject.status as 'Планирование' | 'Активный' | 'Завершен' | 'Приостановлен',
+        manager: apiProject.manager_name,
+        startDate: new Date().toISOString().split('T')[0], // Default date since API doesn't provide it
+        progress: 0, // Default progress since API doesn't provide it
+        defectsCount: 0, // Default defects count since API doesn't provide it
+        team: [] // Default empty team since API doesn't provide it
+      }));
+    }
+  } catch (error: any) {
+    console.error('Error fetching projects:', error);
+    errorMessage.value = error.response?.data?.detail || 'Ошибка при загрузке проектов';
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+onMounted(() => {
+  fetchProjects();
+});
 
 const activeProjects = computed(() => {
-  return projects.filter(p => p.status === 'active');
+  return projects.value.filter((p: Project) => p.status === 'Активный');
 });
 
 const totalDefects = computed(() => {
-  return projects.reduce((sum, project) => sum + project.defectsCount, 0);
+  return projects.value.reduce((sum: number, project: Project) => sum + project.defectsCount, 0);
 });
 
 const averageProgress = computed(() => {
-  if (projects.length === 0) return 0;
-  return Math.round(projects.reduce((sum, project) => sum + project.progress, 0) / projects.length);
+  if (projects.value.length === 0) return 0;
+  return Math.round(projects.value.reduce((sum: number, project: Project) => sum + project.progress, 0) / projects.value.length);
 });
 
 const getProjectStatusClass = (status: string) => {
   const classes = {
-    'planning': 'bg-blue-100 text-blue-800 border-blue-200',
-    'active': 'bg-green-100 text-green-800 border-green-200',
-    'completed': 'bg-gray-100 text-gray-800 border-gray-200',
-    'paused': 'bg-yellow-100 text-yellow-800 border-yellow-200'
+    'Планирование': 'bg-blue-100 text-blue-800 border-blue-200',
+    'Активный': 'bg-green-100 text-green-800 border-green-200',
+    'Завершен': 'bg-gray-100 text-gray-800 border-gray-200',
+    'Приостановлен': 'bg-yellow-100 text-yellow-800 border-yellow-200'
   };
   return classes[status as keyof typeof classes] || 'bg-gray-100 text-gray-800 border-gray-200';
 };
 
 const getProjectStatusText = (status: string) => {
-  const texts = {
-    'planning': 'Планирование',
-    'active': 'Активный',
-    'completed': 'Завершен',
-    'paused': 'Приостановлен'
-  };
-  return texts[status as keyof typeof texts] || 'Неизвестно';
+  return status || 'Неизвестно';
 };
 
 const getProgressColorClass = (status: string) => {
   const classes = {
-    'planning': 'bg-blue-500',
-    'active': 'bg-green-500',
-    'completed': 'bg-gray-500',
-    'paused': 'bg-yellow-500'
+    'Планирование': 'bg-blue-500',
+    'Активный': 'bg-green-500',
+    'Завершен': 'bg-gray-500',
+    'Приостановлен': 'bg-yellow-500'
   };
   return classes[status as keyof typeof classes] || 'bg-gray-500';
 };
 
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('ru-RU', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  });
+
+
+const navigateToCreateProject = () => {
+  router.push('/create-project');
 };
 
-const formatDateRange = (startDate: string, endDate?: string) => {
-  const start = formatDate(startDate);
-  if (!endDate) return `с ${start}`;
-  return `${start} - ${formatDate(endDate)}`;
+const navigateToProjectDetail = (projectId: string | number) => {
+  router.push(`/projects/${projectId}`);
+};
+
+const navigateToProjectEdit = (projectId: string | number) => {
+  router.push(`/projects/${projectId}/edit`);
 };
 </script>
 

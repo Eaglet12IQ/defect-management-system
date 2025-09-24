@@ -178,3 +178,9 @@ class User(Base):
         if not user:
             raise HTTPException(status_code=400, detail="Пользователь не найден с таким ID!")
         return user
+    
+    def get_managers(db: Session):
+        managers = db.query(User).filter(User.role_id == 2)
+        if not managers:
+            raise HTTPException(status_code=400, detail="Менеджеров не обнаружено в системе!")
+        return managers
