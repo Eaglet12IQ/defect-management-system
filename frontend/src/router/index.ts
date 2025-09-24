@@ -4,6 +4,7 @@ import Projects from '../views/Projects.vue';
 import ProjectDetail from '../views/ProjectDetail.vue';
 import CreateProject from '../views/CreateProject.vue';
 import EditProject from '../views/EditProject.vue';
+import CreateDefect from '../views/CreateDefect.vue';
 import Defects from '../views/Defects.vue';
 import Analytics from '../views/Analytics.vue';
 import Login from '../views/Login.vue';
@@ -28,13 +29,13 @@ const router = createRouter({
       path: '/projects',
       name: 'Projects',
       component: Projects,
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true, requiresRole: '2,3' }
     },
     {
       path: '/projects/:id',
       name: 'ProjectDetail',
       component: ProjectDetail,
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true, requiresRole: '2,3' }
     },
     {
       path: '/create-project',
@@ -46,13 +47,31 @@ const router = createRouter({
       path: '/projects/:id/edit',
       name: 'EditProject',
       component: EditProject,
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true, requiresRole: '3' }
     },
     {
       path: '/defects',
       name: 'Defects',
       component: Defects,
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/defects/:id',
+      name: 'DefectDetail',
+      component: () => import('../views/DefectDetail.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/defects/:id/edit',
+      name: 'EditDefect',
+      component: () => import('../views/EditDefect.vue'),
+      meta: { requiresAuth: true, requiresRole: '1' }
+    },
+    {
+      path: '/create-defect',
+      name: 'CreateDefect',
+      component: CreateDefect,
+      meta: { requiresAuth: true, requiresRole: '1' }
     },
     {
       path: '/analytics',
@@ -132,8 +151,14 @@ router.beforeEach(async (to, from, next) => {
     next('/login');
   } else if (to.path === '/login' && isAuthenticated) {
     next('/');
-  } else if (to.meta.requiresRole && !hasRole(to.meta.requiresRole as string)) {
-    next('/'); // Redirect to dashboard if user doesn't have required role
+  } else if (to.meta.requiresRole) {
+    // Handle comma-separated roles like '2,3'
+    const requiredRoles = (to.meta.requiresRole as string).split(',').map(r => r.trim());
+    if (!hasRole(requiredRoles)) {
+      next('/'); // Redirect to dashboard if user doesn't have required role
+    } else {
+      next();
+    }
   } else if (to.name === 'EditProject') {
     // Check project-specific edit permissions
     const projectId = to.params.id as string;

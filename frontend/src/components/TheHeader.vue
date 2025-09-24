@@ -138,8 +138,14 @@ const navigationItems = computed(() => {
     { name: 'Дефекты', path: '/defects', icon: ExclamationTriangleIcon },
   ];
 
+  // Role 4 (some special role) - only dashboard
   if (userData.value?.role === 4) {
     return allItems.filter(item => item.name === 'Дашборд');
+  }
+
+  // Role 1 (Engineers) - hide Projects navigation
+  if (userData.value?.role === 1) {
+    return allItems.filter(item => item.name !== 'Проекты');
   }
 
   return allItems;

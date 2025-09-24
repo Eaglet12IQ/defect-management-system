@@ -1,11 +1,25 @@
 <template>
-  <div class="bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-all duration-300 overflow-hidden card-hover animate-slide-up hover-lift">
+  <div
+    class="bg-white rounded-2xl shadow-card hover:shadow-lg hover:shadow-primary-500/10 hover:-translate-y-1 hover:border-primary-500 transition-all duration-300 overflow-hidden card-hover animate-slide-up hover-lift cursor-pointer border-2 border-transparent"
+    @click="$emit('view', defect)"
+  >
     <!-- Card Header -->
     <div class="p-6 pb-4">
       <div class="flex items-start justify-between mb-4">
-        <div class="flex-1">
-          <h3 class="text-lg font-semibold text-gray-900 mb-2 line-clamp-2">{{ defect.title }}</h3>
-          <p class="text-gray-600 text-sm line-clamp-3 mb-3">{{ defect.description }}</p>
+        <div class="flex-1 flex items-start gap-3">
+          <div class="flex-1">
+            <div class="flex items-center gap-2 mb-2">
+              <h3 class="text-lg font-semibold text-gray-900 line-clamp-2">{{ defect.title }}</h3>
+              <button
+                @click.stop="$emit('edit', defect)"
+                class="p-1.5 text-gray-400 hover:text-primary-600 transition-colors duration-200 rounded-md hover:bg-primary-50 flex-shrink-0"
+                title="Редактировать"
+              >
+                <PencilIcon class="w-4 h-4" />
+              </button>
+            </div>
+            <p class="text-gray-600 text-sm line-clamp-3">{{ defect.description }}</p>
+          </div>
         </div>
         
         <div class="flex flex-col items-end space-y-2 ml-4">
@@ -28,92 +42,60 @@
       <div class="grid grid-cols-2 gap-4 text-sm text-gray-600 mb-4">
         <div>
           <span class="font-medium">Исполнитель:</span>
-          <p class="mt-1">{{ defect.assignee }}</p>
+          <p class="mt-1">{{ defect.assignee || 'Не назначен' }}</p>
         </div>
         <div>
-          <span class="font-medium">Локация:</span>
-          <p class="mt-1">{{ defect.location || 'Не указана' }}</p>
+          <span class="font-medium">Проект:</span>
+          <p class="mt-1">{{ defect.project_name || 'Не указан' }}</p>
         </div>
         <div>
-          <span class="font-medium">Категория:</span>
-          <p class="mt-1">{{ defect.category }}</p>
+          <span class="font-medium">Создатель:</span>
+          <p class="mt-1">{{ defect.creator_name || 'Неизвестно' }}</p>
         </div>
         <div>
           <span class="font-medium">Срок:</span>
-          <p class="mt-1" :class="{ 'text-red-600 font-medium': isOverdue(defect.dueDate) }">
-            {{ formatDate(defect.dueDate) }}
+          <p class="mt-1" :class="{ 'text-red-600 font-medium': isOverdue(defect.due_date) }">
+            {{ formatDate(defect.due_date) }}
           </p>
         </div>
       </div>
 
-      <!-- Tags -->
-      <div v-if="defect.tags.length > 0" class="flex flex-wrap gap-2 mb-4">
-        <span
-          v-for="tag in defect.tags.slice(0, 3)"
-          :key="tag"
-          class="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded-md"
-        >
-          {{ tag }}
-        </span>
-        <span
-          v-if="defect.tags.length > 3"
-          class="px-2 py-1 text-xs bg-gray-100 text-gray-500 rounded-md"
-        >
-          +{{ defect.tags.length - 3 }}
-        </span>
-      </div>
-
-      <!-- Attachments & Comments -->
+      <!-- Attachments -->
       <div class="flex items-center justify-between text-sm text-gray-500">
         <div class="flex items-center space-x-4">
-          <div v-if="defect.attachments.length > 0" class="flex items-center">
+          <div v-if="defect.attachments && defect.attachments.length > 0" class="flex items-center">
             <PaperClipIcon class="w-4 h-4 mr-1" />
             {{ defect.attachments.length }}
           </div>
-          <div v-if="defect.comments.length > 0" class="flex items-center">
-            <ChatBubbleLeftIcon class="w-4 h-4 mr-1" />
-            {{ defect.comments.length }}
-          </div>
         </div>
-        
-        <span>{{ formatDate(defect.createdAt) }}</span>
       </div>
     </div>
 
-    <!-- Card Footer -->
-    <div class="px-6 py-4 bg-gray-50 border-t flex items-center justify-between">
-      <div class="text-sm text-gray-600">
-        Создал: {{ defect.reporter }}
-      </div>
-      
-      <div class="flex space-x-2">
-        <button
-          @click="$emit('view', defect)"
-          class="p-2 text-gray-400 hover:text-primary-600 transition-colors duration-200 rounded-lg hover:bg-primary-50"
-          title="Просмотр"
-        >
-          <EyeIcon class="w-4 h-4" />
-        </button>
-        <button
-          @click="$emit('edit', defect)"
-          class="p-2 text-gray-400 hover:text-primary-600 transition-colors duration-200 rounded-lg hover:bg-primary-50"
-          title="Редактировать"
-        >
-          <PencilIcon class="w-4 h-4" />
-        </button>
-      </div>
-    </div>
+
   </div>
 </template>
 
 <script setup lang="ts">
-import type { Defect } from '../data/mockData';
 import {
-  EyeIcon,
   PencilIcon,
-  PaperClipIcon,
-  ChatBubbleLeftIcon
+  PaperClipIcon
 } from '@heroicons/vue/24/outline';
+
+interface Defect {
+  id: number;
+  title: string;
+  description: string;
+  status: string;
+  priority: string;
+  assignee?: string;
+  due_date?: string;
+  created_at?: string;
+  attachments?: string[];
+  project_id: number;
+  project_name?: string;
+  creator_id: number;
+  creator_name?: string;
+}
 
 interface Props {
   defect: Defect;
@@ -127,42 +109,42 @@ defineEmits<{
 
 const getStatusClass = (status: string) => {
   const classes = {
-    'new': 'status-new',
-    'in-progress': 'status-in-progress',
-    'review': 'status-review',
-    'closed': 'status-closed',
-    'cancelled': 'status-cancelled'
+    'Новый': 'status-new',
+    'В работе': 'status-in-progress',
+    'На проверке': 'status-under-review',
+    'Закрыт': 'status-closed',
+    'Отменен': 'status-cancelled'
   };
   return classes[status as keyof typeof classes] || 'status-new';
 };
 
 const getPriorityClass = (priority: string) => {
   const classes = {
-    'low': 'priority-low',
-    'medium': 'priority-medium',
-    'high': 'priority-high',
-    'critical': 'priority-critical'
+    'Низкий': 'priority-low',
+    'Средний': 'priority-medium',
+    'Высокий': 'priority-high',
+    'Критический': 'priority-critical'
   };
   return classes[priority as keyof typeof classes] || 'priority-medium';
 };
 
 const getStatusText = (status: string) => {
   const texts = {
-    'new': 'Новая',
-    'in-progress': 'В работе',
-    'review': 'На проверке',
-    'closed': 'Закрыта',
-    'cancelled': 'Отменена'
+    'Новый': 'Новый',
+    'В работе': 'В работе',
+    'На проверке': 'На проверке',
+    'Закрыт': 'Закрыт',
+    'Отменен': 'Отменен'
   };
   return texts[status as keyof typeof texts] || 'Неизвестно';
 };
 
 const getPriorityText = (priority: string) => {
   const texts = {
-    'low': 'Низкий',
-    'medium': 'Средний',
-    'high': 'Высокий',
-    'critical': 'Критический'
+    'Низкий': 'Низкий',
+    'Средний': 'Средний',
+    'Высокий': 'Высокий',
+    'Критический': 'Критический'
   };
   return texts[priority as keyof typeof texts] || 'Средний';
 };

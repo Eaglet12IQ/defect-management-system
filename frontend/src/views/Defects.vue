@@ -10,10 +10,13 @@
           <p class="text-white/80">Управление дефектами строительных объектов</p>
         </div>
         
-        <button class="mt-4 sm:mt-0 bg-white text-primary-600 px-6 py-3 rounded-xl font-medium hover:bg-gray-50 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl">
-          <PlusIcon class="w-5 h-5 inline-block mr-2" />
+        <router-link
+          to="/create-defect"
+          class="mt-4 sm:mt-0 bg-white text-primary-600 px-6 py-3 rounded-xl font-medium hover:bg-gray-50 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl inline-flex items-center"
+        >
+          <PlusIcon class="w-5 h-5 mr-2" />
           Новый дефект
-        </button>
+        </router-link>
       </div>
 
       <!-- Filters -->
@@ -49,10 +52,10 @@
             class="px-4 py-3 border border-white/20 rounded-xl bg-white/50 backdrop-blur focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
           >
             <option value="">Все приоритеты</option>
-            <option value="low">Низкий</option>
-            <option value="medium">Средний</option>
-            <option value="high">Высокий</option>
-            <option value="critical">Критический</option>
+            <option value="Низкий">Низкий</option>
+            <option value="Средний">Средний</option>
+            <option value="Высокий">Высокий</option>
+            <option value="Критический">Критический</option>
           </select>
 
           <!-- Project Filter -->
@@ -70,163 +73,128 @@
 
       </div>
 
+      <!-- Loading State -->
+      <div v-if="isLoading" class="text-center py-12 animate-fade-in">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+        <p class="text-white/70 mt-4">Загрузка дефектов...</p>
+      </div>
+
+      <!-- Error State -->
+      <div v-else-if="error" class="text-center py-12 animate-fade-in">
+        <ExclamationTriangleIcon class="w-16 h-16 text-red-400 mx-auto mb-4" />
+        <h3 class="text-xl font-semibold text-white mb-2">Ошибка загрузки</h3>
+        <p class="text-white/70 mb-6">{{ error }}</p>
+        <button
+          @click="loadDefects"
+          class="bg-primary-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-primary-600 transition-all duration-200"
+        >
+          Попробовать снова
+        </button>
+      </div>
+
       <!-- Results Summary -->
-      <div class="flex items-center justify-between mb-6 animate-slide-up-delay-1">
+      <div v-else class="flex items-center justify-between mb-6 animate-slide-up-delay-1">
         <p class="text-white/80">
           Найдено <span class="font-semibold">{{ filteredDefects.length }}</span> из {{ defects.length }} дефектов
         </p>
-        
-        <div class="flex items-center space-x-2">
-          <span class="text-white/60 text-sm">Вид:</span>
-          <button
-            @click="viewMode = 'grid'"
-            :class="viewMode === 'grid' ? 'bg-white/20 text-white' : 'text-white/60 hover:text-white'"
-            class="p-2 rounded-lg transition-all duration-200"
-          >
-            <Squares2X2Icon class="w-5 h-5" />
-          </button>
-          <button
-            @click="viewMode = 'list'"
-            :class="viewMode === 'list' ? 'bg-white/20 text-white' : 'text-white/60 hover:text-white'"
-            class="p-2 rounded-lg transition-all duration-200"
-          >
-            <ListBulletIcon class="w-5 h-5" />
-          </button>
+      </div>
+
+      <!-- Defects Content -->
+      <div v-if="!isLoading && !error">
+        <!-- Defects Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          <DefectCard
+            v-for="(defect, index) in filteredDefects"
+            :key="defect.id"
+            :defect="defect"
+            @edit="editDefect"
+            @view="viewDefect"
+            class="animate-slide-up"
+            :class="`animate-slide-up-delay-${Math.min(index + 1, 4)}`"
+          />
         </div>
-      </div>
 
-      <!-- Defects Grid/List -->
-      <div v-if="viewMode === 'grid'" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        <DefectCard
-          v-for="(defect, index) in filteredDefects"
-          :key="defect.id"
-          :defect="defect"
-          @edit="editDefect"
-          @view="viewDefect"
-          class="animate-slide-up"
-          :class="`animate-slide-up-delay-${Math.min(index + 1, 4)}`"
-        />
-      </div>
-
-      <!-- List View -->
-      <div v-else class="glass rounded-2xl overflow-hidden">
-        <div class="overflow-x-auto">
-          <table class="w-full">
-            <thead class="bg-white/10 border-b border-white/20">
-              <tr>
-                <th class="px-6 py-4 text-left text-sm font-semibold text-white">Дефект</th>
-                <th class="px-6 py-4 text-left text-sm font-semibold text-white">Статус</th>
-                <th class="px-6 py-4 text-left text-sm font-semibold text-white">Приоритет</th>
-                <th class="px-6 py-4 text-left text-sm font-semibold text-white">Исполнитель</th>
-                <th class="px-6 py-4 text-left text-sm font-semibold text-white">Срок</th>
-                <th class="px-6 py-4 text-left text-sm font-semibold text-white">Действия</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-white/10">
-              <tr
-                v-for="(defect, index) in filteredDefects"
-                :key="defect.id"
-                class="hover:bg-white/5 transition-colors duration-200 animate-slide-up"
-                :class="`animate-slide-up-delay-${Math.min(index + 1, 4)}`"
-              >
-                <td class="px-6 py-4">
-                  <div>
-                    <h3 class="font-medium text-white">{{ defect.title }}</h3>
-                    <p class="text-sm text-white/80 truncate max-w-xs">{{ defect.description }}</p>
-                  </div>
-                </td>
-                <td class="px-6 py-4">
-                  <span
-                    class="px-3 py-1 text-xs font-medium rounded-full border"
-                    :class="getStatusClass(defect.status)"
-                  >
-                    {{ getStatusText(defect.status) }}
-                  </span>
-                </td>
-                <td class="px-6 py-4">
-                  <span
-                    class="px-3 py-1 text-xs font-medium rounded-full border"
-                    :class="getPriorityClass(defect.priority)"
-                  >
-                    {{ getPriorityText(defect.priority) }}
-                  </span>
-                </td>
-                <td class="px-6 py-4 text-sm text-white/80">{{ defect.assignee }}</td>
-                <td class="px-6 py-4 text-sm" :class="{ 'text-red-600': isOverdue(defect.dueDate) }">
-                  {{ formatDate(defect.dueDate) }}
-                </td>
-                <td class="px-6 py-4">
-                  <div class="flex space-x-2">
-                    <button
-                      @click="viewDefect(defect)"
-                      class="p-1 text-white/60 hover:text-white transition-colors duration-200"
-                    >
-                      <EyeIcon class="w-4 h-4" />
-                    </button>
-                    <button
-                      @click="editDefect(defect)"
-                      class="p-1 text-white/60 hover:text-white transition-colors duration-200"
-                    >
-                      <PencilIcon class="w-4 h-4" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <!-- Empty State -->
+        <div v-if="filteredDefects.length === 0" class="text-center py-12 animate-fade-in">
+          <ExclamationTriangleIcon class="w-16 h-16 text-white/50 mx-auto mb-4" />
+          <h3 class="text-xl font-semibold text-white mb-2">
+            {{ defects.length === 0 ? 'Дефектов пока нет' : 'Дефекты не найдены' }}
+          </h3>
+          <p class="text-white/70 mb-6">
+            {{ defects.length === 0 ? 'Создайте первый дефект для начала работы' : 'Попробуйте изменить параметры поиска' }}
+          </p>
+          <router-link
+            v-if="defects.length === 0"
+            to="/create-defect"
+            class="bg-white text-primary-600 px-6 py-3 rounded-xl font-medium hover:bg-gray-50 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl inline-flex items-center"
+          >
+            <PlusIcon class="w-5 h-5 mr-2" />
+            Создать дефект
+          </router-link>
         </div>
-      </div>
-
-      <!-- Empty State -->
-      <div v-if="filteredDefects.length === 0" class="text-center py-12 animate-fade-in">
-        <ExclamationTriangleIcon class="w-16 h-16 text-white/50 mx-auto mb-4" />
-        <h3 class="text-xl font-semibold text-white mb-2">
-          {{ defects.length === 0 ? 'Дефектов пока нет' : 'Дефекты не найдены' }}
-        </h3>
-        <p class="text-white/70 mb-6">
-          {{ defects.length === 0 ? 'Создайте первый дефект для начала работы' : 'Попробуйте изменить параметры поиска' }}
-        </p>
-        <button
-          v-if="defects.length === 0"
-          class="bg-white text-primary-600 px-6 py-3 rounded-xl font-medium hover:bg-gray-50 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
-        >
-          <PlusIcon class="w-5 h-5 inline-block mr-2" />
-          Создать дефект
-        </button>
       </div>
     </main>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { mockDefects, mockProjects, type Defect } from '../data/mockData';
+import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import TheHeader from '../components/TheHeader.vue';
 import DefectCard from '../components/DefectCard.vue';
+import { api } from '../utils/api';
 import {
   PlusIcon,
   MagnifyingGlassIcon,
-  Squares2X2Icon,
-  ListBulletIcon,
-  ExclamationTriangleIcon,
-  EyeIcon,
-  PencilIcon
+  ExclamationTriangleIcon
 } from '@heroicons/vue/24/outline';
 
-const defects = mockDefects;
-const projects = mockProjects;
+const router = useRouter();
+const defects = ref<any[]>([]);
+const projects = ref<any[]>([]);
+const isLoading = ref(true);
+const error = ref('');
 
 // Filters
 const searchQuery = ref('');
 const statusFilter = ref('');
 const priorityFilter = ref('');
 const projectFilter = ref('');
-const viewMode = ref<'grid' | 'list'>('grid');
+
+// Load data on component mount
+onMounted(async () => {
+  await loadDefects();
+  await loadProjects();
+});
+
+const loadDefects = async () => {
+  try {
+    isLoading.value = true;
+    error.value = '';
+    const response = await api.get('/defects');
+    defects.value = response.data;
+  } catch (err: any) {
+    console.error('Error loading defects:', err);
+    error.value = 'Ошибка при загрузке дефектов';
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const loadProjects = async () => {
+  try {
+    const response = await api.get('/projects');
+    projects.value = response.data;
+  } catch (err: any) {
+    console.error('Error loading projects:', err);
+    // Projects are used for filtering, so we can continue without them
+  }
+};
 
 
 
 const filteredDefects = computed(() => {
-  let result = [...defects];
+  let result = [...defects.value];
 
   // Search filter
   if (searchQuery.value) {
@@ -234,7 +202,7 @@ const filteredDefects = computed(() => {
     result = result.filter(defect =>
       defect.title.toLowerCase().includes(query) ||
       defect.description.toLowerCase().includes(query) ||
-      defect.location?.toLowerCase().includes(query)
+      defect.project_name?.toLowerCase().includes(query)
     );
   }
 
@@ -250,7 +218,7 @@ const filteredDefects = computed(() => {
 
   // Project filter
   if (projectFilter.value) {
-    result = result.filter(defect => defect.projectId === projectFilter.value);
+    result = result.filter(defect => defect.project_id === projectFilter.value);
   }
 
   return result;
@@ -258,14 +226,12 @@ const filteredDefects = computed(() => {
 
 
 
-const editDefect = (defect: Defect) => {
-  console.log('Editing defect:', defect.id);
-  // Implement edit logic
+const editDefect = (defect: any) => {
+  router.push(`/defects/${defect.id}/edit`);
 };
 
-const viewDefect = (defect: Defect) => {
-  console.log('Viewing defect:', defect.id);
-  // Implement view logic
+const viewDefect = (defect: any) => {
+  router.push(`/defects/${defect.id}`);
 };
 
 const getStatusClass = (status: string) => {
@@ -281,10 +247,10 @@ const getStatusClass = (status: string) => {
 
 const getPriorityClass = (priority: string) => {
   const classes = {
-    'low': 'priority-low',
-    'medium': 'priority-medium',
-    'high': 'priority-high',
-    'critical': 'priority-critical'
+    'Низкий': 'priority-low',
+    'Средний': 'priority-medium',
+    'Высокий': 'priority-high',
+    'Критический': 'priority-critical'
   };
   return classes[priority as keyof typeof classes] || 'priority-medium';
 };
@@ -302,10 +268,10 @@ const getStatusText = (status: string) => {
 
 const getPriorityText = (priority: string) => {
   const texts = {
-    'low': 'Низкий',
-    'medium': 'Средний',
-    'high': 'Высокий',
-    'critical': 'Критический'
+    'Низкий': 'Низкий',
+    'Средний': 'Средний',
+    'Высокий': 'Высокий',
+    'Критический': 'Критический'
   };
   return texts[priority as keyof typeof texts] || 'Средний';
 };

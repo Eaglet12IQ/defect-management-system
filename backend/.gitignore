@@ -5,3 +5,4 @@ __pycache__
 logs
 static/avatars/*
 !static/avatars/default_avatar.png
+static/defects/*

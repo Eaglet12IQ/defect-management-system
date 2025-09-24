@@ -39,16 +39,26 @@ class ApiClient {
     return { data };
   }
 
-  async post<T = any>(endpoint: string, body: any): Promise<ApiResponse<T>> {
+  async post<T = any>(endpoint: string, body: any, options?: RequestInit): Promise<ApiResponse<T>> {
     try {
+      const defaultHeaders: Record<string, string> = {
+        ...this.getAuthHeaders(),
+      };
+
+      // Only set Content-Type to application/json if not FormData
+      if (!(body instanceof FormData)) {
+        defaultHeaders['Content-Type'] = 'application/json';
+      }
+
       const response = await fetch(`${this.baseURL}${endpoint}`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          ...this.getAuthHeaders(),
+          ...defaultHeaders,
+          ...options?.headers,
         },
         credentials: 'include', // Include cookies for refresh token
-        body: JSON.stringify(body),
+        body: body instanceof FormData ? body : JSON.stringify(body),
+        ...options,
       });
       return this.handleResponse<T>(response);
     } catch (error) {
