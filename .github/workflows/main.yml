@@ -27,7 +27,7 @@ jobs:
       working-directory: ./backend
       run: |
         uvicorn app.main:app --host 0.0.0.0 --port 8000 &
-        sleep
+        sleep 5
         echo "FastAPI server started"
 
     - name: Check server availability
