@@ -1,0 +1,29 @@
+name: Defect Management System CI
+
+on:
+  pull_request:
+    branches: [ dev ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.10"
+
+    - name: Install dependencies
+      working-directory: ./backend
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r req.txt
+        pip install pylint
+
+    - name: Run Pylint
+      working-directory: ./backend
+      run: |
+        pylint $(git ls-files '*.py')
