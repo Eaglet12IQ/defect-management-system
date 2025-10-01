@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, Response, Request, Form, File, HTTPException
+from fastapi.responses import FileResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import get_payload_from_refresh_token
@@ -21,6 +22,15 @@ class DefectCreate(BaseModel):
     description: str
     priority: DefectPriorityEnum
     project_id: int
+    assignee: Optional[str] = None
+    due_date: Optional[datetime] = None
+
+class DefectEdit(BaseModel):
+    defect_id: int
+    title: str
+    description: str
+    status: Optional[DefectStatusEnum] = None
+    priority: Optional[DefectPriorityEnum] = None
     assignee: Optional[str] = None
     due_date: Optional[datetime] = None
 
@@ -138,21 +148,51 @@ async def create_defect(
     }
 
 @router.put("/edit_defect")
-async def edit_defect(project_data, response: Response, request: Request, db: Session = Depends(get_db)):
+async def edit_defect(defect_data: DefectEdit, response: Response, request: Request, db: Session = Depends(get_db)):
     payload = get_payload_from_refresh_token(request)
+    user_id = int(payload.get("sub"))
     role_id = payload.get("role")
 
-    if role_id != 3:
-        raise HTTPException(status_code=403, detail="Отказано в доступе!")
-    
-    manager = User.get_user(db, project_data.manager_id)
-    if not manager:
-        raise HTTPException(status_code=400, detail="Менеджер не найден!")
+    # Get the defect
+    defect = db.query(Defect).filter(Defect.id == defect_data.defect_id).first()
+    if not defect:
+        raise HTTPException(status_code=404, detail="Дефект не найден!")
 
-    Project.edit_project(db, project_data.project_id, project_data.name, project_data.description, project_data.manager_id, project_data.status)
+    # Check permissions
+    if role_id == 1 and defect.creator_id != user_id:
+        raise HTTPException(status_code=403, detail="Отказано в доступе!")
+    elif role_id == 2:
+        # Check if user manages the project this defect belongs to
+        project = db.query(Project).filter(Project.id == defect.project_id).first()
+        if not project or project.manager_id != user_id:
+            raise HTTPException(status_code=403, detail="Отказано в доступе!")
+    elif role_id not in [1, 2, 3]:
+        raise HTTPException(status_code=403, detail="Отказано в доступе!")
+
+    # Parse due date if provided
+    parsed_due_date = None
+    if defect_data.due_date:
+        try:
+            parsed_due_date = datetime.fromisoformat(defect_data.due_date.isoformat())
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Неверный формат даты!")
+
+    # Update the defect
+    defect.title = defect_data.title
+    defect.description = defect_data.description
+    if defect_data.status is not None:
+        defect.status = defect_data.status
+    if defect_data.priority is not None:
+        defect.priority = defect_data.priority
+    if defect_data.assignee is not None:
+        defect.assignee = defect_data.assignee
+    if parsed_due_date is not None:
+        defect.due_date = parsed_due_date
+
+    db.commit()
 
     return {
-        "message": "Проект изменен."
+        "message": "Дефект успешно обновлен."
     }
 
 @router.get("/defects")
@@ -190,7 +230,7 @@ async def get_defects(
             "priority": defect.priority.value,
             "assignee": defect.assignee,
             "due_date": defect.due_date.isoformat() if defect.due_date else None,
-            "attachments": defect.attachments or [],
+            "attachments": ["http://localhost:8000/" + path['path'] if isinstance(path, dict) else "http://localhost:8000/" + path for path in (defect.attachments or [])],
             "project_id": defect.project_id,
             "project_name": project.name if project else "Неизвестно",
             "creator_id": defect.creator_id,
@@ -236,7 +276,7 @@ async def get_defect_by_id(
         "priority": defect.priority.value,
         "assignee": defect.assignee,
         "due_date": defect.due_date.isoformat() if defect.due_date else None,
-        "attachments": defect.attachments or [],
+        "attachments": ["http://localhost:8000/" + path['path'] if isinstance(path, dict) else "http://localhost:8000/" + path for path in (defect.attachments or [])],
         "project_id": defect.project_id,
         "project_name": project.name if project else "Неизвестно",
         "creator_id": defect.creator_id,

@@ -275,7 +275,7 @@
           <div class="glass rounded-2xl p-6 animate-slide-up-delay-2">
             <h3 class="text-lg font-semibold text-white mb-4">Быстрые действия</h3>
             <div class="space-y-3">
-              <!-- Show "New project" for role 3 (Руководитель), otherwise show "New defect" -->
+              <!-- Show "New project" for role 3 (Руководитель) -->
               <button
                 v-if="userRole === 3"
                 @click="navigateToCreateProject"
@@ -284,25 +284,30 @@
                 <FolderPlusIcon class="w-5 h-5 mr-2" />
                 Новый проект
               </button>
+              <!-- Show "New defect" for role 1 (Инженер) -->
               <button
-                v-else
+                v-else-if="userRole === 1"
+                @click="navigateToCreateDefect"
                 class="w-full bg-primary-600 text-white px-4 py-3 rounded-xl font-medium hover:bg-primary-700 transition-all duration-200 transform hover:scale-105 flex items-center justify-center"
               >
                 <PlusIcon class="w-5 h-5 mr-2" />
                 Новый дефект
               </button>
-              <button class="w-full bg-white/20 text-white px-4 py-3 rounded-xl font-medium hover:bg-white/30 border border-white/30 transition-all duration-200 transform hover:scale-105 flex items-center justify-center hover:shadow-lg">
+              <!-- Show "Create report" as primary button for role 2 (Менеджер) -->
+              <button
+                v-else-if="userRole === 2"
+                class="w-full bg-primary-600 text-white px-4 py-3 rounded-xl font-medium hover:bg-primary-700 transition-all duration-200 transform hover:scale-105 flex items-center justify-center"
+              >
                 <DocumentTextIcon class="w-5 h-5 mr-2" />
                 Создать отчет
               </button>
-              <!-- Hide "New project" button for role 3 (Руководитель) -->
+              <!-- Show "Create report" as secondary button for other roles -->
               <button
-                v-if="userRole !== 3"
-                @click="navigateToCreateProject"
+                v-else
                 class="w-full bg-white/20 text-white px-4 py-3 rounded-xl font-medium hover:bg-white/30 border border-white/30 transition-all duration-200 transform hover:scale-105 flex items-center justify-center hover:shadow-lg"
               >
-                <FolderPlusIcon class="w-5 h-5 mr-2" />
-                Новый проект
+                <DocumentTextIcon class="w-5 h-5 mr-2" />
+                Создать отчет
               </button>
             </div>
           </div>
@@ -650,6 +655,10 @@ const viewDefect = (defect: Defect) => {
 
 const navigateToCreateProject = () => {
   router.push('/create-project');
+};
+
+const navigateToCreateDefect = () => {
+  router.push('/create-defect');
 };
 </script>
 

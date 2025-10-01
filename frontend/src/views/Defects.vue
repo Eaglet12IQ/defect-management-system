@@ -11,6 +11,7 @@
         </div>
         
         <router-link
+          v-if="!hasRoleId(3) && !hasRoleId(2)"
           to="/create-defect"
           class="mt-4 sm:mt-0 bg-white text-primary-600 px-6 py-3 rounded-xl font-medium hover:bg-gray-50 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl inline-flex items-center"
         >
@@ -124,7 +125,7 @@
             {{ defects.length === 0 ? 'Создайте первый дефект для начала работы' : 'Попробуйте изменить параметры поиска' }}
           </p>
           <router-link
-            v-if="defects.length === 0"
+            v-if="defects.length === 0 && !hasRoleId(3) && !hasRoleId(2)"
             to="/create-defect"
             class="bg-white text-primary-600 px-6 py-3 rounded-xl font-medium hover:bg-gray-50 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl inline-flex items-center"
           >
@@ -143,11 +144,14 @@ import { useRouter } from 'vue-router';
 import TheHeader from '../components/TheHeader.vue';
 import DefectCard from '../components/DefectCard.vue';
 import { api } from '../utils/api';
+import { useAuth } from '../composables/useAuth';
 import {
   PlusIcon,
   MagnifyingGlassIcon,
   ExclamationTriangleIcon
 } from '@heroicons/vue/24/outline';
+
+const { hasRoleId } = useAuth();
 
 const router = useRouter();
 const defects = ref<any[]>([]);

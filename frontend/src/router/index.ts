@@ -47,7 +47,7 @@ const router = createRouter({
       path: '/projects/:id/edit',
       name: 'EditProject',
       component: EditProject,
-      meta: { requiresAuth: true, requiresRole: '3' }
+      meta: { requiresAuth: true, requiresRole: '2,3' }
     },
     {
       path: '/defects',
@@ -65,7 +65,7 @@ const router = createRouter({
       path: '/defects/:id/edit',
       name: 'EditDefect',
       component: () => import('../views/EditDefect.vue'),
-      meta: { requiresAuth: true, requiresRole: '1' }
+      meta: { requiresAuth: true, requiresRole: '1,2' }
     },
     {
       path: '/create-defect',

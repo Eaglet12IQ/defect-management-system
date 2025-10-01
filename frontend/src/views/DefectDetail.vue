@@ -43,6 +43,7 @@
 
           <div class="flex space-x-3 mt-4 sm:mt-0">
             <button
+              v-if="!hasRoleId(3)"
               @click="editDefect"
               class="bg-white text-primary-600 px-6 py-3 rounded-xl font-medium hover:bg-gray-50 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl inline-flex items-center"
             >
@@ -123,9 +124,17 @@
 
                 <div v-if="defect.attachments && defect.attachments.length > 0">
                   <label class="block text-sm font-medium text-white/80 mb-2">Вложения</label>
-                  <div class="flex items-center space-x-2">
-                    <PaperClipIcon class="w-5 h-5 text-white/60" />
-                    <span class="text-white">{{ defect.attachments.length }} файлов</span>
+                  <div class="space-y-2">
+                    <a
+                      v-for="attachment in defect.attachments"
+                      :key="attachment"
+                      :href="attachment"
+                      target="_blank"
+                      class="flex items-center space-x-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg px-4 py-3 text-white hover:text-blue-200 transition-all duration-200 hover:border-white/40 hover:shadow-lg"
+                    >
+                      <PaperClipIcon class="w-5 h-5 text-white" />
+                      <span class="font-medium">{{ getFileName(attachment) }}</span>
+                    </a>
                   </div>
                 </div>
               </div>
@@ -142,12 +151,15 @@ import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import TheHeader from '../components/TheHeader.vue';
 import { api } from '../utils/api';
+import { useAuth } from '../composables/useAuth';
 import {
   ArrowLeftIcon,
   PencilIcon,
   ExclamationTriangleIcon,
   PaperClipIcon
 } from '@heroicons/vue/24/outline';
+
+const { hasRoleId } = useAuth();
 
 const route = useRoute();
 const router = useRouter();
@@ -235,6 +247,12 @@ const formatDate = (dateString?: string) => {
 const isOverdue = (dateString?: string) => {
   if (!dateString) return false;
   return new Date(dateString) < new Date();
+};
+
+const getFileName = (url: string) => {
+  // Extract filename from URL like "/static/defects/1/1234567890_file.txt"
+  const parts = url.split('/');
+  return parts[parts.length - 1];
 };
 
 onMounted(() => {

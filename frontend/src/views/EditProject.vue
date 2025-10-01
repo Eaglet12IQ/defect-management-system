@@ -246,13 +246,7 @@ const accessDenied = ref(false);
 // Load available managers and project data on component mount
 onMounted(async () => {
   try {
-    // Load managers
-    const managersResponse = await api.get('/managers');
-    if (managersResponse.data) {
-      availableManagers.value = managersResponse.data;
-    }
-
-    // Load project data
+    // Load project data first
     const projectResponse = await api.get(`/projects/${projectId}`);
     if (projectResponse.data) {
       const project: Project = projectResponse.data;
@@ -262,6 +256,14 @@ onMounted(async () => {
       form.manager_id = project.manager_id.toString();
       form.manager_name = project.manager_name;
       form.status = project.status;
+    }
+
+    // Load managers only for admins
+    if (hasRole('3')) {
+      const managersResponse = await api.get('/managers');
+      if (managersResponse.data) {
+        availableManagers.value = managersResponse.data;
+      }
     }
   } catch (error: any) {
     console.error('Error loading data:', error);

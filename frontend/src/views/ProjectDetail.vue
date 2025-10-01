@@ -4,29 +4,29 @@
 
     <main class="container-responsive py-8">
       <!-- Header -->
-      <div class="mb-8">
-        <div class="flex items-center justify-between mb-4">
-          <router-link
-            to="/projects"
-            class="text-white/80 hover:text-white transition-colors duration-200 flex items-center space-x-2"
-          >
-            <ArrowLeftIcon class="w-5 h-5" />
-            <span>Назад к проектам</span>
-          </router-link>
-          <div class="flex space-x-3">
-            <button
-              v-if="canEditProject"
-              @click="navigateToEdit"
-              class="bg-white text-primary-600 px-4 py-2 rounded-xl font-medium hover:bg-gray-50 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
+        <div>
+          <div class="flex items-center space-x-3 mb-2">
+            <router-link
+              to="/projects"
+              class="text-white/80 hover:text-white transition-colors duration-200"
             >
-              <PencilIcon class="w-4 h-4 inline-block mr-2" />
-              Редактировать
-            </button>
+              <ArrowLeftIcon class="w-5 h-5" />
+            </router-link>
+            <h2 class="text-3xl font-bold text-white">{{ project?.name }}</h2>
           </div>
+          <p class="text-white/80">Подробная информация о проекте</p>
         </div>
-        <div class="text-center">
-          <h2 class="text-3xl font-bold text-white mb-2">{{ project?.name }}</h2>
-          <p class="text-white/80">{{ project?.description }}</p>
+
+        <div class="flex space-x-3 mt-4 sm:mt-0">
+          <button
+            v-if="canEditProject"
+            @click="navigateToEdit"
+            class="bg-white text-primary-600 px-6 py-3 rounded-xl font-medium hover:bg-gray-50 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl inline-flex items-center"
+          >
+            <PencilIcon class="w-5 h-5 mr-2" />
+            Редактировать
+          </button>
         </div>
       </div>
 
@@ -53,11 +53,11 @@
 
       <!-- Project Details -->
       <div v-else-if="project" class="glass rounded-2xl p-8 animate-slide-up">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <!-- Project Info -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <!-- Left Column -->
           <div class="space-y-6">
             <div>
-              <h3 class="text-xl font-semibold text-white mb-4">Информация о проекте</h3>
+              <h3 class="text-xl font-semibold text-white mb-4">Основная информация</h3>
               <div class="space-y-4">
                 <div class="flex justify-between">
                   <span class="text-white/80">Название:</span>
@@ -85,10 +85,10 @@
             </div>
           </div>
 
-          <!-- Project Stats -->
+          <!-- Right Column -->
           <div class="space-y-6">
             <div>
-              <h3 class="text-xl font-semibold text-white mb-4">Статистика</h3>
+              <h3 class="text-xl font-semibold text-white mb-4">Дополнительная информация</h3>
               <div class="grid grid-cols-2 gap-4">
                 <div class="glass-inner rounded-xl p-4 text-center">
                   <div class="text-2xl font-bold text-white">0</div>
@@ -125,7 +125,7 @@ import { ArrowLeftIcon, ExclamationTriangleIcon, PencilIcon } from '@heroicons/v
 const route = useRoute();
 const router = useRouter();
 const projectId = route.params.id as string;
-const { hasRole } = useAuth();
+const { hasRole, hasRoleId } = useAuth();
 
 interface Project {
   id: number;
@@ -143,7 +143,7 @@ const loadError = ref('');
 // Check if user can edit the project
 const canEditProject = computed(() => {
   if (!project.value) return false;
-  if (hasRole('3')) return true; // Admins can edit any project
+  if (hasRoleId(3)) return true; // Руководитель can edit any project
 
   // For managers, check if they are the manager of this project
   const token = localStorage.getItem('access_token');

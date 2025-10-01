@@ -70,6 +70,11 @@ export function useAuth() {
     return currentUser.value.role === role;
   };
 
+  const hasRoleId = (roleId: number) => {
+    if (!currentUser.value || !currentUser.value.role) return false;
+    return currentUser.value.role === String(roleId);
+  };
+
   return {
     currentUser: readonly(currentUser),
     isAuthenticated: readonly(isAuthenticated),
@@ -77,5 +82,6 @@ export function useAuth() {
     logout,
     getCurrentUser,
     hasRole,
+    hasRoleId,
   };
 }

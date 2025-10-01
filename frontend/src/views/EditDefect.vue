@@ -94,52 +94,49 @@
               <p v-if="errors.description" class="mt-1 text-sm text-red-400">{{ errors.description }}</p>
             </div>
 
-            <!-- Status and Priority -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <!-- Status -->
-              <div>
-                <label class="block text-sm font-medium text-white/80 mb-2">
-                  Статус *
-                </label>
-                <select
-                  v-model="form.status"
-                  required
-                  class="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 hover:border-gray-400 focus:scale-105 appearance-none"
-                  :class="{ 'border-red-300 focus:ring-red-500': errors.status }"
-                >
-                  <option value="" disabled>Выберите статус</option>
-                  <option value="Новый">Новый</option>
-                  <option value="В работе">В работе</option>
-                  <option value="На проверке">На проверке</option>
-                  <option value="Закрыт">Закрыт</option>
-                  <option value="Отменен">Отменен</option>
-                </select>
-                <p v-if="errors.status" class="mt-1 text-sm text-red-400">{{ errors.status }}</p>
-              </div>
-
-              <!-- Priority -->
-              <div>
-                <label class="block text-sm font-medium text-white/80 mb-2">
-                  Приоритет *
-                </label>
-                <select
-                  v-model="form.priority"
-                  required
-                  class="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 hover:border-gray-400 focus:scale-105 appearance-none"
-                  :class="{ 'border-red-300 focus:ring-red-500': errors.priority }"
-                >
-                  <option value="" disabled>Выберите приоритет</option>
-                  <option value="Низкий">Низкий</option>
-                  <option value="Средний">Средний</option>
-                  <option value="Высокий">Высокий</option>
-                  <option value="Критический">Критический</option>
-                </select>
-                <p v-if="errors.priority" class="mt-1 text-sm text-red-400">{{ errors.priority }}</p>
-              </div>
+            <!-- Priority (for all users) -->
+            <div class="mb-6">
+              <label class="block text-sm font-medium text-white/80 mb-2">
+                Приоритет *
+              </label>
+              <select
+                v-model="form.priority"
+                required
+                class="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 hover:border-gray-400 focus:scale-105 appearance-none"
+                :class="{ 'border-red-300 focus:ring-red-500': errors.priority }"
+              >
+                <option value="" disabled>Выберите приоритет</option>
+                <option value="Низкий">Низкий</option>
+                <option value="Средний">Средний</option>
+                <option value="Высокий">Высокий</option>
+                <option value="Критический">Критический</option>
+              </select>
+              <p v-if="errors.priority" class="mt-1 text-sm text-red-400">{{ errors.priority }}</p>
             </div>
 
-            <!-- Assignee and Due Date -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Status (only for managers and admins) -->
+            <div v-if="!hasRole('1')" class="mb-6">
+              <label class="block text-sm font-medium text-white/80 mb-2">
+                Статус *
+              </label>
+              <select
+                v-model="form.status"
+                required
+                class="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 hover:border-gray-400 focus:scale-105 appearance-none"
+                :class="{ 'border-red-300 focus:ring-red-500': errors.status }"
+              >
+                <option value="" disabled>Выберите статус</option>
+                <option value="Новый">Новый</option>
+                <option value="В работе">В работе</option>
+                <option value="На проверке">На проверке</option>
+                <option value="Закрыт">Закрыт</option>
+                <option value="Отменен">Отменен</option>
+              </select>
+              <p v-if="errors.status" class="mt-1 text-sm text-red-400">{{ errors.status }}</p>
+            </div>
+
+            <!-- Assignee and Due Date (only for managers and admins) -->
+            <div v-if="!hasRole('1')" class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <!-- Assignee -->
               <div>
                 <label class="block text-sm font-medium text-white/80 mb-2">
@@ -215,8 +212,11 @@
 import { ref, reactive, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { api } from '../utils/api';
+import { useAuth } from '../composables/useAuth';
 import TheHeader from '../components/TheHeader.vue';
 import { ArrowLeftIcon, ExclamationTriangleIcon } from '@heroicons/vue/24/outline';
+
+const { hasRole } = useAuth();
 
 const route = useRoute();
 const router = useRouter();
@@ -312,14 +312,18 @@ const validateForm = () => {
     isValid = false;
   }
 
-  if (!form.status) {
-    errors.status = 'Выберите статус дефекта';
-    isValid = false;
-  }
-
+  // Validate priority for all users
   if (!form.priority) {
     errors.priority = 'Выберите приоритет дефекта';
     isValid = false;
+  }
+
+  // Only validate status for managers and admins
+  if (!hasRole('1')) {
+    if (!form.status) {
+      errors.status = 'Выберите статус дефекта';
+      isValid = false;
+    }
   }
 
   return isValid;
@@ -339,11 +343,15 @@ const handleSubmit = async () => {
       defect_id: parseInt(defectId),
       title: form.title.trim(),
       description: form.description.trim(),
-      status: form.status,
-      priority: form.priority,
-      assignee: form.assignee.trim() || null,
-      due_date: form.due_date || null
+      priority: form.priority
     };
+
+    // Only include additional fields for managers and admins
+    if (!hasRole('1')) {
+      defectData.status = form.status;
+      defectData.assignee = form.assignee.trim() || null;
+      defectData.due_date = form.due_date || null;
+    }
 
     const response = await api.put('/edit_defect', defectData);
 
