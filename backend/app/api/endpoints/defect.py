@@ -91,6 +91,8 @@ async def create_defect(
     if due_date:
         try:
             parsed_due_date = datetime.fromisoformat(due_date.replace('Z', '+00:00'))
+            if parsed_due_date.date() < datetime.now().date():
+                raise HTTPException(status_code=400, detail="Срок выполнения не может быть в прошлом!")
         except ValueError:
             raise HTTPException(status_code=400, detail="Неверный формат даты!")
 
@@ -147,14 +149,26 @@ async def create_defect(
         "defect_id": new_defect.id
     }
 
-@router.put("/edit_defect")
-async def edit_defect(defect_data: DefectEdit, response: Response, request: Request, db: Session = Depends(get_db)):
+@router.post("/edit_defect")
+async def edit_defect(
+    response: Response,
+    request: Request,
+    defect_id: int = Form(...),
+    title: str = Form(None),
+    description: str = Form(None),
+    priority: str = Form(None),
+    status: str = Form(None),
+    assignee: str = Form(None),
+    due_date: str = Form(None),
+    attachments: List[UploadFileType] = File(None),
+    db: Session = Depends(get_db)
+):
     payload = get_payload_from_refresh_token(request)
     user_id = int(payload.get("sub"))
     role_id = payload.get("role")
 
     # Get the defect
-    defect = db.query(Defect).filter(Defect.id == defect_data.defect_id).first()
+    defect = db.query(Defect).filter(Defect.id == defect_id).first()
     if not defect:
         raise HTTPException(status_code=404, detail="Дефект не найден!")
 
@@ -169,25 +183,76 @@ async def edit_defect(defect_data: DefectEdit, response: Response, request: Requ
     elif role_id not in [1, 2, 3]:
         raise HTTPException(status_code=403, detail="Отказано в доступе!")
 
+    # Validate priority if provided
+    priority_enum = None
+    if priority:
+        try:
+            priority_enum = DefectPriorityEnum(priority)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Неверный приоритет дефекта!")
+
+    # Validate status if provided
+    status_enum = None
+    if status:
+        try:
+            status_enum = DefectStatusEnum(status)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Неверный статус дефекта!")
+
     # Parse due date if provided
     parsed_due_date = None
-    if defect_data.due_date:
+    if due_date:
         try:
-            parsed_due_date = datetime.fromisoformat(defect_data.due_date.isoformat())
+            parsed_due_date = datetime.fromisoformat(due_date.replace('Z', '+00:00'))
+            if parsed_due_date.date() < datetime.now().date():
+                raise HTTPException(status_code=400, detail="Срок выполнения не может быть в прошлом!")
         except ValueError:
             raise HTTPException(status_code=400, detail="Неверный формат даты!")
 
+    # Handle additional attachments
+    existing_attachments = defect.attachments or []
+    new_attachments = []
+    if attachments:
+        # Ensure folder exists
+        base_static_path = Path("static/defects")
+        defect_folder = base_static_path / str(defect.id)
+        defect_folder.mkdir(parents=True, exist_ok=True)
+
+        for attachment in attachments:
+            if attachment and attachment.filename:
+                # Generate unique filename to avoid conflicts
+                file_extension = Path(attachment.filename).suffix
+                timestamp = int(datetime.now().timestamp())
+                unique_filename = f"{timestamp}_{attachment.filename}"
+                file_path = defect_folder / unique_filename
+
+                # Save file to disk
+                try:
+                    with open(file_path, "wb") as buffer:
+                        shutil.copyfileobj(attachment.file, buffer)
+
+                    # Store only the file path
+                    new_attachments.append(f"static/defects/{defect.id}/{unique_filename}")
+                except Exception as e:
+                    print(f"Error saving file {attachment.filename}: {e}")
+                    continue
+
     # Update the defect
-    defect.title = defect_data.title
-    defect.description = defect_data.description
-    if defect_data.status is not None:
-        defect.status = defect_data.status
-    if defect_data.priority is not None:
-        defect.priority = defect_data.priority
-    if defect_data.assignee is not None:
-        defect.assignee = defect_data.assignee
+    if title is not None:
+        defect.title = title
+    if description is not None:
+        defect.description = description
+    if priority_enum is not None:
+        defect.priority = priority_enum
+    if status_enum is not None:
+        defect.status = status_enum
+    if assignee is not None:
+        defect.assignee = assignee
     if parsed_due_date is not None:
         defect.due_date = parsed_due_date
+
+    # Append new attachments to existing ones
+    defect.attachments = existing_attachments + new_attachments
 
     db.commit()
 
@@ -282,3 +347,47 @@ async def get_defect_by_id(
         "creator_id": defect.creator_id,
         "creator_name": f"{creator.profile.first_name} {creator.profile.last_name}" if creator and creator.profile else "Неизвестно"
     }
+
+@router.get("/defects/project/{project_id}")
+async def get_defects_by_project(
+    project_id: int,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    # Get user from token
+    payload = get_payload_from_refresh_token(request)
+    user_id = int(payload.get("sub"))
+    role_id = payload.get("role")
+
+    # Check if project exists
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Проект не найден!")
+
+    # Check permissions - managers can only see defects for their own projects
+    if role_id == 2 and project.manager_id != user_id:
+        raise HTTPException(status_code=403, detail="Отказано в доступе!")
+
+    # Get defects for this project
+    defects = db.query(Defect).filter(Defect.project_id == project_id).all()
+
+    result = []
+    for defect in defects:
+        creator = db.query(User).filter(User.id == defect.creator_id).first()
+
+        result.append({
+            "id": defect.id,
+            "title": defect.title,
+            "description": defect.description,
+            "status": defect.status.value,
+            "priority": defect.priority.value,
+            "assignee": defect.assignee,
+            "due_date": defect.due_date.isoformat() if defect.due_date else None,
+            "attachments": ["http://localhost:8000/" + path['path'] if isinstance(path, dict) else "http://localhost:8000/" + path for path in (defect.attachments or [])],
+            "project_id": defect.project_id,
+            "project_name": project.name,
+            "creator_id": defect.creator_id,
+            "creator_name": f"{creator.profile.first_name} {creator.profile.last_name}" if creator and creator.profile else "Неизвестно"
+        })
+
+    return result

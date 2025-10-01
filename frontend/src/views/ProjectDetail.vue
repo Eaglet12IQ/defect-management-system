@@ -88,23 +88,40 @@
           <!-- Right Column -->
           <div class="space-y-6">
             <div>
-              <h3 class="text-xl font-semibold text-white mb-4">Дополнительная информация</h3>
-              <div class="grid grid-cols-2 gap-4">
-                <div class="glass-inner rounded-xl p-4 text-center">
-                  <div class="text-2xl font-bold text-white">0</div>
-                  <div class="text-white/80 text-sm">Дефектов</div>
-                </div>
-                <div class="glass-inner rounded-xl p-4 text-center">
-                  <div class="text-2xl font-bold text-white">0</div>
-                  <div class="text-white/80 text-sm">Участников</div>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <h3 class="text-xl font-semibold text-white mb-4">Команда</h3>
+              <h3 class="text-xl font-semibold text-white mb-4">Дефекты проекта</h3>
               <div class="glass-inner rounded-xl p-4">
-                <p class="text-white/80 text-center">Команда проекта пока не назначена</p>
+                <div v-if="defects.length === 0" class="text-white/80 text-center">
+                  Дефекты для этого проекта пока не созданы
+                </div>
+                <div v-else class="space-y-3">
+                  <div
+                    v-for="defect in defects"
+                    :key="defect.id"
+                    @click="navigateToDefect(defect.id)"
+                    class="cursor-pointer hover:bg-white/10 rounded-lg p-3 transition-colors duration-200 border border-white/10 hover:border-white/20"
+                  >
+                    <div class="flex justify-between items-start">
+                      <div class="flex-1">
+                        <h4 class="text-white font-medium text-sm mb-1">{{ defect.title }}</h4>
+                        <p class="text-white/70 text-xs line-clamp-2">{{ defect.description }}</p>
+                      </div>
+                      <div class="ml-3 flex flex-col items-end space-y-1">
+                        <span
+                          class="px-2 py-1 text-xs font-medium rounded-full border"
+                          :class="getDefectStatusClass(defect.status)"
+                        >
+                          {{ defect.status }}
+                        </span>
+                        <span
+                          class="px-2 py-1 text-xs font-medium rounded-full border"
+                          :class="getDefectPriorityClass(defect.priority)"
+                        >
+                          {{ defect.priority }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -136,7 +153,23 @@ interface Project {
   status: string;
 }
 
+interface Defect {
+  id: number;
+  title: string;
+  description: string;
+  status: string;
+  priority: string;
+  assignee: string | null;
+  due_date: string | null;
+  attachments: string[];
+  project_id: number;
+  project_name: string;
+  creator_id: number;
+  creator_name: string;
+}
+
 const project = ref<Project | null>(null);
+const defects = ref<Defect[]>([]);
 const isLoading = ref(true);
 const loadError = ref('');
 
@@ -174,20 +207,55 @@ const getProjectStatusText = (status: string) => {
   return status || 'Неизвестно';
 };
 
+const getDefectStatusClass = (status: string) => {
+  const classes = {
+    'NEW': 'status-new',
+    'В работе': 'status-in-progress',
+    'На проверке': 'status-under-review',
+    'Закрыт': 'status-closed',
+    'Отменен': 'status-cancelled'
+  };
+  return classes[status as keyof typeof classes] || 'status-new';
+};
+
+const getDefectPriorityClass = (priority: string) => {
+  const classes = {
+    'Низкий': 'priority-low',
+    'Средний': 'priority-medium',
+    'Высокий': 'priority-high',
+    'Критический': 'priority-critical'
+  };
+  return classes[priority as keyof typeof classes] || 'priority-medium';
+};
+
 const navigateToEdit = () => {
   router.push(`/projects/${projectId}/edit`);
+};
+
+const navigateToDefect = (defectId: number) => {
+  router.push(`/defects/${defectId}`);
 };
 
 onMounted(async () => {
   try {
     isLoading.value = true;
     loadError.value = '';
-    const response = await api.get(`/projects/${projectId}`);
 
-    if (response.error) {
-      loadError.value = response.error;
+    // Load project data
+    const projectResponse = await api.get(`/projects/${projectId}`);
+    if (projectResponse.error) {
+      loadError.value = projectResponse.error;
+      return;
+    }
+    project.value = projectResponse.data;
+
+    // Load defects for this project
+    const defectsResponse = await api.get(`/defects/project/${projectId}`);
+    if (defectsResponse.error) {
+      console.error('Error loading defects:', defectsResponse.error);
+      // Don't set loadError for defects, just log it
     } else {
-      project.value = response.data;
+      defects.value = defectsResponse.data;
     }
   } catch (error: any) {
     console.error('Error loading project:', error);

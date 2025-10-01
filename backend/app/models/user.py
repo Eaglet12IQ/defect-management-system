@@ -6,7 +6,6 @@ from app.models.role import Role # for model
 from app.models.profile import Profile
 from .defect import Defect
 from .project import Project
-from .auditlog import AuditLog
 from .report import Report
 import os
 from fastapi.responses import JSONResponse
@@ -35,7 +34,6 @@ class User(Base):
     created_defects = relationship("Defect", back_populates="creator", foreign_keys="Defect.creator_id")
     managed_projects = relationship("Project", back_populates="manager")
 
-    audit_logs = relationship("AuditLog", back_populates="user")
     reports = relationship("Report", back_populates="user", foreign_keys="Report.user_id")
 
     def delete(db: Session, response: Response, request: Request):

@@ -62,40 +62,61 @@
         <!-- Edit Defect Form -->
         <div v-else class="glass rounded-2xl p-8 animate-slide-up">
           <form @submit.prevent="handleSubmit" class="space-y-6">
-            <!-- Defect Title -->
-            <div>
-              <label class="block text-sm font-medium text-white/80 mb-2">
-                Название дефекта *
-              </label>
-              <input
-                v-model="form.title"
-                type="text"
-                required
-                class="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 hover:border-gray-400 focus:scale-105"
-                placeholder="Введите название дефекта"
-                :class="{ 'border-red-300 focus:ring-red-500': errors.title }"
-              />
-              <p v-if="errors.title" class="mt-1 text-sm text-red-400">{{ errors.title }}</p>
-            </div>
+        <!-- Defect Title -->
+        <div v-if="hasRole('1')">
+          <label class="block text-sm font-medium text-white/80 mb-2">
+            Название дефекта *
+          </label>
+          <input
+            v-model="form.title"
+            type="text"
+            required
+            class="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 hover:border-gray-400 focus:scale-105"
+            placeholder="Введите название дефекта"
+            :class="{ 'border-red-300 focus:ring-red-500': errors.title }"
+          />
+          <p v-if="errors.title" class="mt-1 text-sm text-red-400">{{ errors.title }}</p>
+        </div>
 
-            <!-- Defect Description -->
-            <div>
-              <label class="block text-sm font-medium text-white/80 mb-2">
-                Описание дефекта *
-              </label>
-              <textarea
-                v-model="form.description"
-                rows="4"
-                required
-                class="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 hover:border-gray-400 focus:scale-105 resize-none"
-                placeholder="Опишите дефект подробно"
-                :class="{ 'border-red-300 focus:ring-red-500': errors.description }"
-              ></textarea>
-              <p v-if="errors.description" class="mt-1 text-sm text-red-400">{{ errors.description }}</p>
-            </div>
+        <!-- Defect Description -->
+        <div v-if="hasRole('1')">
+          <label class="block text-sm font-medium text-white/80 mb-2">
+            Описание дефекта *
+          </label>
+          <textarea
+            v-model="form.description"
+            rows="4"
+            required
+            class="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 hover:border-gray-400 focus:scale-105 resize-none"
+            placeholder="Опишите дефект подробно"
+            :class="{ 'border-red-300 focus:ring-red-500': errors.description }"
+          ></textarea>
+          <p v-if="errors.description" class="mt-1 text-sm text-red-400">{{ errors.description }}</p>
+        </div>
 
-            <!-- Priority (for all users) -->
-            <div class="mb-6">
+        <!-- Additional Attachments -->
+        <div v-if="hasRole('1')">
+          <label class="block text-sm font-medium text-white/80 mb-2">
+            Дополнительные вложения
+          </label>
+          <input
+            type="file"
+            multiple
+            ref="fileInput"
+            @change="handleFileChange"
+            class="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 hover:border-gray-400 focus:scale-105"
+          />
+          <p class="mt-1 text-sm text-white/60">Выберите файлы для добавления к существующим вложениям</p>
+          <div v-if="selectedFiles.length > 0" class="mt-2">
+            <p class="text-sm text-white/80">Выбранные файлы:</p>
+            <ul class="text-sm text-white/60">
+              <li v-for="file in selectedFiles" :key="file.name">{{ file.name }}</li>
+            </ul>
+          </div>
+        </div>
+
+            <!-- Priority (only for regular users) -->
+            <div v-if="hasRole('1')" class="mb-6">
               <label class="block text-sm font-medium text-white/80 mb-2">
                 Приоритет *
               </label>
@@ -260,6 +281,8 @@ const isSubmitting = ref(false);
 const successMessage = ref('');
 const errorMessage = ref('');
 const accessDenied = ref(false);
+const selectedFiles = ref<File[]>([]);
+const fileInput = ref<HTMLInputElement | null>(null);
 
 // Load defect data on component mount
 onMounted(async () => {
@@ -296,26 +319,29 @@ const validateForm = () => {
 
   let isValid = true;
 
-  if (!form.title.trim()) {
-    errors.title = 'Название дефекта обязательно для заполнения';
-    isValid = false;
-  } else if (form.title.trim().length < 3) {
-    errors.title = 'Название дефекта должно содержать минимум 3 символа';
-    isValid = false;
-  }
+  // Validate title and description only for regular users
+  if (hasRole('1')) {
+    if (!form.title.trim()) {
+      errors.title = 'Название дефекта обязательно для заполнения';
+      isValid = false;
+    } else if (form.title.trim().length < 3) {
+      errors.title = 'Название дефекта должно содержать минимум 3 символа';
+      isValid = false;
+    }
 
-  if (!form.description.trim()) {
-    errors.description = 'Описание дефекта обязательно для заполнения';
-    isValid = false;
-  } else if (form.description.trim().length < 10) {
-    errors.description = 'Описание дефекта должно содержать минимум 10 символов';
-    isValid = false;
-  }
+    if (!form.description.trim()) {
+      errors.description = 'Описание дефекта обязательно для заполнения';
+      isValid = false;
+    } else if (form.description.trim().length < 10) {
+      errors.description = 'Описание дефекта должно содержать минимум 10 символов';
+      isValid = false;
+    }
 
-  // Validate priority for all users
-  if (!form.priority) {
-    errors.priority = 'Выберите приоритет дефекта';
-    isValid = false;
+    // Validate priority for regular users
+    if (!form.priority) {
+      errors.priority = 'Выберите приоритет дефекта';
+      isValid = false;
+    }
   }
 
   // Only validate status for managers and admins
@@ -329,6 +355,13 @@ const validateForm = () => {
   return isValid;
 };
 
+const handleFileChange = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  if (target.files) {
+    selectedFiles.value = Array.from(target.files);
+  }
+};
+
 const handleSubmit = async () => {
   if (!validateForm()) {
     return;
@@ -339,21 +372,27 @@ const handleSubmit = async () => {
   errorMessage.value = '';
 
   try {
-    const defectData: any = {
-      defect_id: parseInt(defectId),
-      title: form.title.trim(),
-      description: form.description.trim(),
-      priority: form.priority
-    };
+    const formData = new FormData();
+    formData.append('defect_id', defectId);
 
-    // Only include additional fields for managers and admins
-    if (!hasRole('1')) {
-      defectData.status = form.status;
-      defectData.assignee = form.assignee.trim() || null;
-      defectData.due_date = form.due_date || null;
+    if (hasRole('1')) {
+      formData.append('title', form.title.trim());
+      formData.append('description', form.description.trim());
+      formData.append('priority', form.priority);
+
+      // Append selected files
+      selectedFiles.value.forEach((file) => {
+        formData.append('attachments', file);
+      });
     }
 
-    const response = await api.put('/edit_defect', defectData);
+    if (!hasRole('1')) {
+      formData.append('status', form.status);
+      formData.append('assignee', form.assignee.trim() || '');
+      formData.append('due_date', form.due_date || '');
+    }
+
+    const response = await api.post('/edit_defect', formData);
 
     if (response.error) {
       errorMessage.value = response.error;

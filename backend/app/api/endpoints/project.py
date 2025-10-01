@@ -5,6 +5,7 @@ from app.core.security import get_payload_from_refresh_token
 from app.models.user import User
 from app.models.profile import Profile
 from app.models.project import Project
+from app.models.defect import Defect
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -117,15 +118,26 @@ async def get_projects(
         # For other roles, show all projects
         projects = db.query(Project).all()
 
+    # Get defect counts for all projects
+    from sqlalchemy import func
+    defect_counts = db.query(
+        Defect.project_id,
+        func.count(Defect.id).label('defect_count')
+    ).group_by(Defect.project_id).all()
+
+    defect_count_dict = {count.project_id: count.defect_count for count in defect_counts}
+
     result = []
     for project in projects:
+        defect_count = defect_count_dict.get(project.id, 0)
         result.append({
             "id": project.id,
             "name": project.name,
             "description": project.description,
             "manager_id": project.manager_id,
             "manager_name": f"{project.manager.profile.first_name} {project.manager.profile.last_name}" if project.manager.profile else "Неизвестно",
-            "status": project.status
+            "status": project.status,
+            "defect_count": defect_count
         })
 
     return result

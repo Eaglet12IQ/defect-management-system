@@ -175,6 +175,7 @@ interface ApiProject {
   manager_id: number;
   manager_name: string;
   status: string;
+  defect_count: number;
 }
 
 const projects = ref<Project[]>([]);
@@ -200,7 +201,7 @@ const fetchProjects = async () => {
         manager_id: apiProject.manager_id,
         startDate: new Date().toISOString().split('T')[0], // Default date since API doesn't provide it
         progress: 0, // Default progress since API doesn't provide it
-        defectsCount: 0, // Default defects count since API doesn't provide it
+        defectsCount: apiProject.defect_count,
         team: [] // Default empty team since API doesn't provide it
       }));
     }
