@@ -148,84 +148,22 @@
         </form>
       </div>
 
-      <!-- Key Metrics -->
-      <div v-if="userRole !== 4" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <StatCard
-          title="Всего дефектов"
-          :value="stats.totalDefects"
-          :icon="ExclamationTriangleIcon"
-          variant="primary"
-          :change="8.2"
-        />
-        <StatCard
-          title="Новые дефекты"
-          :value="stats.newDefects"
-          :icon="PlusCircleIcon"
-          variant="warning"
-          :change="12.5"
-        />
-        <StatCard
-          title="В работе"
-          :value="stats.inProgressDefects"
-          :icon="ClockIcon"
-          variant="secondary"
-          :change="-3.1"
-        />
-        <StatCard
-          title="Завершено"
-          :value="stats.completionRate + '%'"
-          :icon="CheckCircleIcon"
-          variant="success"
-          :change="5.7"
-          :show-progress="true"
-          :max-value="100"
-        />
-      </div>
-
-      <!-- Admin Panel -->
-      <div v-if="hasRole('1') && userRole !== 4" class="glass rounded-2xl p-6 mb-8 animate-slide-up">
-        <h3 class="text-xl font-semibold text-white mb-4">Панель администратора</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <StatCard
-            title="Пользователей"
-            :value="50"
-            :icon="ExclamationTriangleIcon"
-            variant="primary"
-            :change="2.1"
-          />
-          <StatCard
-            title="Проектов"
-            :value="12"
-            :icon="PlusCircleIcon"
-            variant="warning"
-            :change="5.0"
-          />
-          <StatCard
-            title="Активных сессий"
-            :value="8"
-            :icon="ClockIcon"
-            variant="success"
-            :change="1.5"
-          />
-        </div>
-      </div>
-
       <!-- Main Content Grid -->
       <div v-if="userRole !== 4" class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
         <!-- Recent Defects -->
         <div class="lg:col-span-2">
           <div class="glass rounded-2xl p-6 animate-slide-up">
-            <div class="flex items-center justify-between mb-6">
-              <h3 class="text-xl font-semibold text-white">Последние дефекты</h3>
-              <router-link
-                to="/defects"
-                class="text-primary-600 hover:text-primary-700 text-sm font-medium hover:underline transition-all duration-200"
-              >
-                Показать все
-              </router-link>
+            <div class="flex items-center mb-6">
+              <h3 class="text-xl font-semibold text-white">Дефекты в работе</h3>
             </div>
             
-            <div class="space-y-4">
+            <div class="custom-scroll max-h-64 overflow-y-auto space-y-4">
+              <div
+                v-if="recentDefects.length === 0"
+                class="text-center text-white/70 py-8"
+              >
+                Нет дефектов для отображения
+              </div>
               <div
                 v-for="(defect, index) in recentDefects"
                 :key="defect.id"
@@ -237,7 +175,7 @@
                   class="w-3 h-3 rounded-full flex-shrink-0 mt-2"
                   :class="getStatusColor(defect.status)"
                 ></div>
-                
+
                 <div class="flex-1 min-w-0">
                   <div class="flex items-start justify-between">
                     <div class="flex-1">
@@ -249,10 +187,10 @@
                       </p>
                       <div class="flex items-center space-x-4 mt-2 text-xs text-white/70">
                         <span>{{ defect.location }}</span>
-                        <span>{{ formatDate(defect.createdAt) }}</span>
+                        <span>{{ formatDate(defect.due_date) }}</span>
                       </div>
                     </div>
-                    
+
                     <div class="flex flex-col items-end space-y-1 ml-4">
                       <span
                         class="px-2 py-1 text-xs font-medium rounded-full border"
@@ -315,24 +253,21 @@
           <!-- Team Activity -->
           <div class="glass rounded-2xl p-6 animate-slide-up-delay-3">
             <h3 class="text-lg font-semibold text-white mb-4">Активность команды</h3>
-            <div class="space-y-4">
+            <div class="custom-scroll max-h-64 overflow-y-auto space-y-1">
               <div
                 v-for="(activity, index) in teamActivity"
                 :key="activity.id"
-                class="flex items-center space-x-3 animate-slide-up"
+                class="flex items-center space-x-3 animate-slide-up cursor-pointer hover:bg-white/10 transition-colors rounded-lg p-2"
                 :class="`animate-slide-up-delay-${Math.min(index + 4, 4)}`"
+                @click="viewActivity(activity)"
               >
-                <img
-                  :src="activity.avatar"
-                  :alt="activity.user"
-                  class="w-8 h-8 rounded-full"
-                />
                 <div class="flex-1 min-w-0">
                   <p class="text-sm text-white">
-                    <span class="font-medium">{{ activity.user }}</span>
                     {{ activity.action }}
+                    <br />
+                    <span v-if="activity.changes_detail !== 'Нет данных об изменениях'" class="text-xs text-white/70 block break-words max-w-full" v-html="activity.changes_detail"></span>
                   </p>
-                  <p class="text-xs text-white/70">{{ formatTimeAgo(activity.timestamp) }}</p>
+                  <p class="text-xs text-white/70">{{ new Date(activity.timestamp).toLocaleString('ru-RU') }}</p>
                 </div>
               </div>
             </div>
@@ -396,7 +331,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, reactive } from 'vue';
+import { computed, onMounted, ref, reactive, type Ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuth } from '../composables/useAuth';
 import { mockStats, mockDefects, type Defect } from '../data/mockData';
@@ -445,6 +380,7 @@ const safeUserRole = computed(() => userRole.value || 0);
 
 const stats = mockStats;
 const fio = ref<string>('');
+const teamActivity = ref<any[]>([]);
 
 const registerForm = reactive({
   username: '' as string,
@@ -477,6 +413,18 @@ onMounted(async () => {
   const response = await api.get('/dashboard');
   if (response.data) {
     fio.value = response.data.fio || '';
+    if (response.data.team_activity) {
+      teamActivity.value = response.data.team_activity.map((a: any) => ({
+        id: a.record_id,
+        table_name: a.table_name,
+        action: a.action,
+        comment: a.comment,
+        timestamp: a.timestamp,
+        changes_detail: a.changes_detail,
+        avatar: '' // Placeholder, can be enhanced to fetch user avatar if available
+      }));
+    }
+    recentDefects.value = response.data.recent_defects || [];
   }
 });
 
@@ -535,42 +483,12 @@ const handleRegister = async () => {
   }
 };
 
-// Recent defects (last 5)
-const recentDefects = computed(() => {
-  return mockDefects
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 5);
-});
+const recentDefects = ref<any[]>([]);
 
 // Critical defects
 const criticalDefects = computed(() => {
   return mockDefects.filter(d => d.priority === 'critical' && d.status !== 'closed');
 });
-
-// Team activity mock data
-const teamActivity = computed(() => [
-  {
-    id: '1',
-    user: 'Мария Иванова',
-    action: 'закрыла дефект "Протечка кровли"',
-    timestamp: '2024-01-22T14:45:00Z',
-    avatar: 'https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg?auto=compress&cs=tinysrgb&w=40&h=40&dpr=2'
-  },
-  {
-    id: '2',
-    user: 'Дмитрий Смирнов',
-    action: 'взял в работу дефект "Трещина в стене"',
-    timestamp: '2024-01-22T10:30:00Z',
-    avatar: 'https://images.pexels.com/photos/2182970/pexels-photo-2182970.jpeg?auto=compress&cs=tinysrgb&w=40&h=40&dpr=2'
-  },
-  {
-    id: '3',
-    user: 'Елена Козлова',
-    action: 'создала новый дефект',
-    timestamp: '2024-01-22T09:15:00Z',
-    avatar: 'https://images.pexels.com/photos/3992656/pexels-photo-3992656.jpeg?auto=compress&cs=tinysrgb&w=40&h=40&dpr=2'
-  }
-]);
 
 // Chart data
 const defectsTrendData = computed(() => [
@@ -621,8 +539,12 @@ const getPriorityText = (priority: string) => {
   return texts[priority as keyof typeof texts] || 'Средний';
 };
 
-const formatDate = (dateString: string) => {
+const formatDate = (dateString?: string) => {
+  if (!dateString) return 'Не указан';
+
   const date = new Date(dateString);
+  if (isNaN(date.getTime())) return 'Неверная дата';
+
   return date.toLocaleDateString('ru-RU', {
     day: '2-digit',
     month: '2-digit',
@@ -660,6 +582,14 @@ const navigateToCreateProject = () => {
 const navigateToCreateDefect = () => {
   router.push('/create-defect');
 };
+
+const viewActivity = (activity: any) => {
+  if (activity.table_name === 'defects') {
+    router.push(`/defects/${activity.id}`);
+  } else if (activity.table_name === 'projects') {
+    router.push(`/projects/${activity.id}`);
+  }
+};
 </script>
 
 <style scoped>
@@ -672,5 +602,36 @@ const navigateToCreateDefect = () => {
 
 select option:first-child {
   color: #9ca3af;
+}
+
+/* Custom scrollbar for team activity */
+.custom-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.5) transparent;
+  border: none;
+}
+
+.custom-scroll::-webkit-scrollbar {
+  width: 10px;
+  background: transparent;
+}
+
+.custom-scroll::-webkit-scrollbar-track {
+  background: linear-gradient(180deg, rgba(255,255,255,0.1), rgba(255,255,255,0));
+  border-radius: 12px;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #a3bffa, #3b82f6);
+  border-radius: 12px;
+  box-shadow: 0 0 6px #3b82f6;
+  border: 2px solid transparent;
+  background-clip: content-box;
+  transition: background 0.3s ease;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #2563eb, #1e40af);
+  box-shadow: 0 0 8px #1e40af;
 }
 </style>

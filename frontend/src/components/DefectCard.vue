@@ -155,8 +155,10 @@ const getPriorityText = (priority: string) => {
 
 const formatDate = (dateString?: string) => {
   if (!dateString) return 'Не указан';
-  
+
   const date = new Date(dateString);
+  if (isNaN(date.getTime())) return 'Неверная дата';
+
   return date.toLocaleDateString('ru-RU', {
     day: '2-digit',
     month: '2-digit',
