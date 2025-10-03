@@ -13,7 +13,7 @@
             >
               <ArrowLeftIcon class="w-5 h-5" />
             </router-link>
-            <h2 class="text-3xl font-bold text-white">{{ project?.name }}</h2>
+            <h2 class="text-3xl font-bold text-white line-clamp-1 max-w-lg" :title="project?.name">{{ project?.name }}</h2>
           </div>
           <p class="text-white/80">Подробная информация о проекте</p>
         </div>
@@ -61,7 +61,7 @@
               <div class="space-y-4">
                 <div class="flex justify-between">
                   <span class="text-white/80">Название:</span>
-                  <span class="text-white font-medium">{{ project.name }}</span>
+                  <span class="text-white font-medium line-clamp-1" :title="project.name">{{ project.name }}</span>
                 </div>
                 <div class="flex justify-between">
                   <span class="text-white/80">Статус:</span>
@@ -81,7 +81,7 @@
 
             <div>
               <h3 class="text-xl font-semibold text-white mb-4">Описание</h3>
-              <p class="text-white/80 leading-relaxed">{{ project.description }}</p>
+              <p class="text-white/80 leading-relaxed line-clamp-3" :title="project.description">{{ project.description }}</p>
             </div>
           </div>
 

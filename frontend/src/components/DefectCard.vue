@@ -1,15 +1,15 @@
 <template>
   <div
-    class="bg-white rounded-2xl shadow-card hover:shadow-lg hover:shadow-primary-500/10 hover:-translate-y-1 hover:border-primary-500 transition-all duration-300 overflow-hidden card-hover animate-slide-up hover-lift cursor-pointer border-2 border-transparent"
+    class="bg-white rounded-2xl shadow-card hover:shadow-lg hover:shadow-primary-500/10 hover:-translate-y-1 hover:border-primary-500 transition-all duration-300 overflow-hidden card-hover animate-slide-up hover-lift cursor-pointer border-2 border-transparent max-w-full"
     @click="$emit('view', defect)"
   >
     <!-- Card Header -->
-    <div class="p-6 pb-4">
-      <div class="flex items-start justify-between mb-4">
-        <div class="flex-1 flex items-start gap-3">
-          <div class="flex-1">
+    <div class="p-6 pb-4 relative">
+      <div class="flex items-start mb-4">
+        <div class="flex-1 flex items-start gap-3 pr-32">
+          <div class="flex-1 mr-40">
             <div class="flex items-center gap-2 mb-2">
-              <h3 class="text-lg font-semibold text-gray-900 line-clamp-2">{{ defect.title }}</h3>
+              <h3 class="text-lg font-semibold text-gray-900 line-clamp-2" :title="defect.title">{{ defect.title }}</h3>
               <button
                 v-if="!hasRoleId(3)"
                 @click.stop="$emit('edit', defect)"
@@ -19,11 +19,11 @@
                 <PencilIcon class="w-4 h-4" />
               </button>
             </div>
-            <p class="text-gray-600 text-sm line-clamp-3">{{ defect.description }}</p>
+            <p class="text-gray-600 text-sm line-clamp-3 pr-40" :title="defect.description">{{ defect.description }}</p>
           </div>
         </div>
         
-        <div class="flex flex-col items-end space-y-2 ml-4">
+        <div class="flex flex-col items-end space-y-2 absolute top-6 right-6">
           <span
             class="px-3 py-1 text-xs font-medium rounded-full border"
             :class="getStatusClass(defect.status)"

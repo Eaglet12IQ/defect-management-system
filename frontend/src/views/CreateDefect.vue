@@ -280,9 +280,9 @@ const submitForm = async () => {
     message.value = response.data.message;
     messageType.value = 'success';
 
-    // Redirect to defects page after 2 seconds
+    // Redirect to defect detail page after 2 seconds
     setTimeout(() => {
-      router.push('/defects');
+      router.push(`/defects/${response.data.defect_id}`);
     }, 2000);
 
   } catch (error: any) {

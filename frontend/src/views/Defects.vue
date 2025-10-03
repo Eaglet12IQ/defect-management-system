@@ -122,16 +122,9 @@
             {{ defects.length === 0 ? 'Дефектов пока нет' : 'Дефекты не найдены' }}
           </h3>
           <p class="text-white/70 mb-6">
-            {{ defects.length === 0 ? 'Создайте первый дефект для начала работы' : 'Попробуйте изменить параметры поиска' }}
+            {{ defects.length === 0 ? (canCreateDefect ? 'Создайте первый дефект для начала работы' : '') : 'Попробуйте изменить параметры поиска' }}
           </p>
-          <router-link
-            v-if="defects.length === 0 && !hasRoleId(3) && !hasRoleId(2)"
-            to="/create-defect"
-            class="bg-white text-primary-600 px-6 py-3 rounded-xl font-medium hover:bg-gray-50 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl inline-flex items-center"
-          >
-            <PlusIcon class="w-5 h-5 mr-2" />
-            Создать дефект
-          </router-link>
+          <!-- Removed create defect button as per user request -->
         </div>
       </div>
     </main>
@@ -152,6 +145,8 @@ import {
 } from '@heroicons/vue/24/outline';
 
 const { hasRoleId } = useAuth();
+
+const canCreateDefect = computed(() => !hasRoleId(3) && !hasRoleId(2));
 
 const router = useRouter();
 const defects = ref<any[]>([]);

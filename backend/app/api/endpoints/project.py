@@ -52,15 +52,16 @@ async def create_project(project_data: ProjectCreate, response: Response, reques
 
     if role_id != 3:
         raise HTTPException(status_code=403, detail="Отказано в доступе!")
-    
+
     manager = User.get_user(db, project_data.manager_id)
     if not manager:
         raise HTTPException(status_code=400, detail="Менеджер не найден!")
 
-    Project.create_project(db, project_data.name, project_data.description, project_data.manager_id)
+    new_project = Project.create_project(db, project_data.name, project_data.description, project_data.manager_id)
 
     return {
-        "message": "Новый проект создан."
+        "message": "Новый проект создан.",
+        "project_id": new_project.id
     }
 
 @router.put("/edit_project")

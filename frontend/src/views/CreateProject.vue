@@ -227,9 +227,9 @@ const handleSubmit = async () => {
       form.description = '';
       form.manager_id = '';
 
-      // Redirect to projects page after a short delay
+      // Redirect to project detail page after a short delay
       setTimeout(() => {
-        router.push('/projects');
+        router.push(`/projects/${response.data.project_id}`);
       }, 1500);
     }
   } catch (error: any) {

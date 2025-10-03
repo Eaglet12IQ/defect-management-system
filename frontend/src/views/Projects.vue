@@ -49,7 +49,7 @@
           v-for="(project, index) in projects"
           :key="project.id"
           @click="navigateToProjectDetail(project.id)"
-          class="bg-white rounded-2xl shadow-card hover:shadow-lg hover:shadow-primary-500/10 hover:-translate-y-1 hover:border-primary-500 transition-all duration-300 overflow-hidden card-hover animate-slide-up hover-lift cursor-pointer border-2 border-transparent hover:border-primary-500"
+          class="relative bg-white rounded-2xl shadow-card hover:shadow-lg hover:shadow-primary-500/10 hover:-translate-y-1 hover:border-primary-500 transition-all duration-300 overflow-hidden card-hover animate-slide-up hover-lift cursor-pointer border-2 border-transparent hover:border-primary-500"
           :class="`animate-slide-up-delay-${Math.min(index + 1, 4)}`"
         >
           <!-- Project Header -->
@@ -69,14 +69,14 @@
                 </div>
                 <p class="text-gray-600 text-sm line-clamp-2 mb-3">{{ project.description }}</p>
               </div>
-
-              <span
-                class="px-3 py-1 text-xs font-medium rounded-full border flex-shrink-0"
-                :class="getProjectStatusClass(project.status)"
-              >
-                {{ getProjectStatusText(project.status) }}
-              </span>
             </div>
+
+            <span
+              class="absolute top-6 right-6 px-3 py-1 text-xs font-medium rounded-full border"
+              :class="getProjectStatusClass(project.status)"
+            >
+              {{ getProjectStatusText(project.status) }}
+            </span>
 
 
 
@@ -126,15 +126,7 @@
       <div v-if="!isLoading && !errorMessage && projects.length === 0" class="text-center py-12 animate-fade-in">
         <FolderOpenIcon class="w-16 h-16 text-white/50 mx-auto mb-4" />
         <h3 class="text-xl font-semibold text-white mb-2">Проектов пока нет</h3>
-        <p class="text-white/70 mb-6">Создайте первый проект для начала работы</p>
-        <button
-          v-if="hasRole('3')"
-          @click="navigateToCreateProject"
-          class="bg-white text-primary-600 px-6 py-3 rounded-xl font-medium hover:bg-gray-50 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
-        >
-          <PlusIcon class="w-5 h-5 inline-block mr-2" />
-          Создать проект
-        </button>
+        <p v-if="hasRole('3')" class="text-white/70 mb-6">Создайте первый проект для начала работы</p>
       </div>
     </main>
   </div>
