@@ -56,8 +56,8 @@
           <div class="p-6 pb-4">
             <div class="flex items-start justify-between mb-4">
               <div class="flex-1">
-                <div class="flex items-center space-x-2 mb-2">
-                  <h3 class="text-xl font-semibold text-gray-900">{{ project.name }}</h3>
+                <div class="flex items-center space-x-2 mb-2 w-[60%]">
+                  <h3 class="text-xl font-semibold text-gray-900 truncate">{{ project.name }}</h3>
                   <button
                     v-if="canEditProject(project.manager_id)"
                     @click.stop="navigateToProjectEdit(project.id)"
@@ -67,7 +67,9 @@
                     <PencilIcon class="w-4 h-4" />
                   </button>
                 </div>
-                <p class="text-gray-600 text-sm line-clamp-2 mb-3">{{ project.description }}</p>
+                <div class="flex w-[60%]">
+                  <p class="text-gray-600 text-sm truncate mb-3">{{ project.description }}</p>
+                </div>
               </div>
             </div>
 

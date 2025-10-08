@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen gradient-bg">
+  <div class="min-h-screen gradient-bg ">
     <TheHeader />
     
     <main class="container-responsive py-8">

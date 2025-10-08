@@ -8,8 +8,8 @@
       <div class="flex items-start mb-4">
         <div class="flex-1 flex items-start gap-3 pr-32">
           <div class="flex-1 mr-40">
-            <div class="flex items-center gap-2 mb-2">
-              <h3 class="text-lg font-semibold text-gray-900 line-clamp-2" :title="defect.title">{{ defect.title }}</h3>
+            <div class="flex items-center gap-2 mb-2 w-56">
+              <h3 class="text-lg font-semibold text-gray-900 truncate" :title="defect.title">{{ defect.title }}</h3>
               <button
                 v-if="!hasRoleId(3) && (hasRoleId(2) ? defect.status !== 'В работе' : defect.status === 'В работе')"
                 @click.stop="$emit('edit', defect)"
@@ -19,7 +19,10 @@
                 <PlayIcon class="w-4 h-4" />
               </button>
             </div>
-            <p class="text-gray-600 text-sm line-clamp-3 pr-40" :title="defect.description">{{ defect.description }}</p>
+            <div class="flex items-center gap-2 mb-2 w-[350px]">
+              <p class="text-gray-600 text-sm pr-40 truncate" :title="defect.description">{{ defect.description }}</p>
+            </div>
+            
           </div>
         </div>
         

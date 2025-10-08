@@ -1,8 +1,8 @@
 <template>
-  <div class="h-screen flex flex-col gradient-bg">
+  <div class="h-screen flex flex-col gradient-bg overflow-auto">
     <TheHeader />
 
-    <main class="flex-1 container-responsive py-8 overflow-hidden">
+    <main class="flex-1 container-responsive py-8">
       <!-- Welcome Section -->
       <div class="mb-8 animate-fade-in">
         <h2 class="text-3xl font-bold text-white mb-2">
