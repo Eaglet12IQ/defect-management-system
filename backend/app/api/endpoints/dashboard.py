@@ -4,6 +4,9 @@ from app.core.database import get_db
 from app.models.profile import Profile
 from app.models.user import User
 from app.core.security import get_payload_from_refresh_token
+from app.models.auditlog import AuditLog
+from app.models.project import Project
+from app.models.defect import Defect, DefectStatusEnum
 
 router = APIRouter()
 
@@ -12,7 +15,7 @@ async def dashboard(response: Response, request: Request, db: Session = Depends(
     payload = get_payload_from_refresh_token(request)
     access_user_id = payload.get("sub")
     role_id = payload.get("role")
-    
+
     data = {}
 
     profile = Profile.get_profile(db, access_user_id)
@@ -22,9 +25,6 @@ async def dashboard(response: Response, request: Request, db: Session = Depends(
     data["fio"] = " ".join(fio_parts)
 
     # Fetch audit log activities based on role
-    from app.models.auditlog import AuditLog
-    from app.models.project import Project
-    from app.models.defect import Defect
 
     activities = []
 
@@ -53,7 +53,12 @@ async def dashboard(response: Response, request: Request, db: Session = Depends(
             (AuditLog.table_name == 'defects') & (AuditLog.record_id.in_(defect_ids))
         ).order_by(AuditLog.timestamp.desc()).limit(10).all()
 
-    else:  # Руководитель высшего уровня (Leader) or others
+    elif role_id == 3:  # Руководитель (Leader)
+        # Get audit logs for all projects and defects
+        activities = db.query(AuditLog).filter(
+            (AuditLog.table_name == 'projects') | (AuditLog.table_name == 'defects')
+        ).order_by(AuditLog.timestamp.desc()).limit(20).all()
+    else:  # Others
         # Get all audit logs
         activities = db.query(AuditLog).order_by(AuditLog.timestamp.desc()).limit(10).all()
 
@@ -135,29 +140,129 @@ async def dashboard(response: Response, request: Request, db: Session = Depends(
     # Fetch recent defects
     if role_id == 1:
         defects_query = db.query(Defect).filter(Defect.status == 'В работе')
+        data["recent_defects"] = []
+        for defect in defects_query:
+            project = db.query(Project).filter(Project.id == defect.project_id).first()
+            creator = db.query(User).filter(User.id == defect.creator_id).first()
+
+            data["recent_defects"].append({
+                "id": defect.id,
+                "title": defect.title,
+                "description": defect.description,
+                "status": defect.status.value,
+                "priority": defect.priority.value,
+                "assignee": defect.assignee,
+                "due_date": defect.due_date.date().isoformat() if defect.due_date else None,
+                "attachments": ["http://localhost:8000/" + path['path'] if isinstance(path, dict) else "http://localhost:8000/" + path for path in (defect.attachments or [])],
+                "project_id": defect.project_id,
+                "project_name": project.name if project else "Неизвестно",
+                "creator_id": defect.creator_id,
+                "creator_name": f"{creator.profile.first_name} {creator.profile.last_name}" if creator and creator.profile else "Неизвестно",
+                "location": project.name if project else "Неизвестно"
+            })
+    elif role_id == 2:
+        # For managers, separate defects into two blocks: "Новые" and "На проверке"
+        new_defects_query = db.query(Defect).filter(Defect.status == 'Новый')
+        under_review_defects_query = db.query(Defect).filter(Defect.status == 'На проверке')
+
+        data["new_defects"] = []
+        for defect in new_defects_query:
+            project = db.query(Project).filter(Project.id == defect.project_id).first()
+            creator = db.query(User).filter(User.id == defect.creator_id).first()
+
+            data["new_defects"].append({
+                "id": defect.id,
+                "title": defect.title,
+                "description": defect.description,
+                "status": defect.status.value,
+                "priority": defect.priority.value,
+                "assignee": defect.assignee,
+                "due_date": defect.due_date.date().isoformat() if defect.due_date else None,
+                "attachments": ["http://localhost:8000/" + path['path'] if isinstance(path, dict) else "http://localhost:8000/" + path for path in (defect.attachments or [])],
+                "project_id": defect.project_id,
+                "project_name": project.name if project else "Неизвестно",
+                "creator_id": defect.creator_id,
+                "creator_name": f"{creator.profile.first_name} {creator.profile.last_name}" if creator and creator.profile else "Неизвестно",
+                "location": project.name if project else "Неизвестно"
+            })
+
+        data["under_review_defects"] = []
+        for defect in under_review_defects_query:
+            project = db.query(Project).filter(Project.id == defect.project_id).first()
+            creator = db.query(User).filter(User.id == defect.creator_id).first()
+
+            data["under_review_defects"].append({
+                "id": defect.id,
+                "title": defect.title,
+                "description": defect.description,
+                "status": defect.status.value,
+                "priority": defect.priority.value,
+                "assignee": defect.assignee,
+                "due_date": defect.due_date.date().isoformat() if defect.due_date else None,
+                "attachments": ["http://localhost:8000/" + path['path'] if isinstance(path, dict) else "http://localhost:8000/" + path for path in (defect.attachments or [])],
+                "project_id": defect.project_id,
+                "project_name": project.name if project else "Неизвестно",
+                "creator_id": defect.creator_id,
+                "creator_name": f"{creator.profile.first_name} {creator.profile.last_name}" if creator and creator.profile else "Неизвестно",
+                "location": project.name if project else "Неизвестно"
+            })
+    elif role_id == 3:  # Руководитель (Leader)
+        # Get chart data for defects
+        from sqlalchemy import func
+
+        # Defect status distribution
+        defect_status_counts = db.query(
+            Defect.status,
+            func.count(Defect.id).label('count')
+        ).group_by(Defect.status).all()
+
+        data["defect_status_chart"] = [
+            {"status": status.value, "count": count}
+            for status, count in defect_status_counts
+        ]
+
+        # Defect priority distribution
+        defect_priority_counts = db.query(
+            Defect.priority,
+            func.count(Defect.id).label('count')
+        ).group_by(Defect.priority).all()
+
+        data["defect_priority_chart"] = [
+            {"priority": priority.value, "count": count}
+            for priority, count in defect_priority_counts
+        ]
+
+        # Project status distribution
+        project_status_counts = db.query(
+            Project.status,
+            func.count(Project.id).label('count')
+        ).group_by(Project.status).all()
+
+        data["project_status_chart"] = [
+            {"status": status.value, "count": count}
+            for status, count in project_status_counts
+        ]
     else:
         defects_query = db.query(Defect)
+        data["recent_defects"] = []
+        for defect in defects_query:
+            project = db.query(Project).filter(Project.id == defect.project_id).first()
+            creator = db.query(User).filter(User.id == defect.creator_id).first()
 
-    # Format defects
-    data["recent_defects"] = []
-    for defect in defects_query:
-        project = db.query(Project).filter(Project.id == defect.project_id).first()
-        creator = db.query(User).filter(User.id == defect.creator_id).first()
-
-        data["recent_defects"].append({
-            "id": defect.id,
-            "title": defect.title,
-            "description": defect.description,
-            "status": defect.status.value,
-            "priority": defect.priority.value,
-            "assignee": defect.assignee,
-            "due_date": defect.due_date.date().isoformat() if defect.due_date else None,
-            "attachments": ["http://localhost:8000/" + path['path'] if isinstance(path, dict) else "http://localhost:8000/" + path for path in (defect.attachments or [])],
-            "project_id": defect.project_id,
-            "project_name": project.name if project else "Неизвестно",
-            "creator_id": defect.creator_id,
-            "creator_name": f"{creator.profile.first_name} {creator.profile.last_name}" if creator and creator.profile else "Неизвестно",
-            "location": project.name if project else "Неизвестно"
-        })
+            data["recent_defects"].append({
+                "id": defect.id,
+                "title": defect.title,
+                "description": defect.description,
+                "status": defect.status.value,
+                "priority": defect.priority.value,
+                "assignee": defect.assignee,
+                "due_date": defect.due_date.date().isoformat() if defect.due_date else None,
+                "attachments": ["http://localhost:8000/" + path['path'] if isinstance(path, dict) else "http://localhost:8000/" + path for path in (defect.attachments or [])],
+                "project_id": defect.project_id,
+                "project_name": project.name if project else "Неизвестно",
+                "creator_id": defect.creator_id,
+                "creator_name": f"{creator.profile.first_name} {creator.profile.last_name}" if creator and creator.profile else "Неизвестно",
+                "location": project.name if project else "Неизвестно"
+            })
 
     return data

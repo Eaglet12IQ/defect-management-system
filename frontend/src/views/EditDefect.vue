@@ -16,8 +16,9 @@
             </router-link>
           </div>
           <div class="text-center">
-            <h2 class="text-3xl font-bold text-white mb-2">Редактирование дефекта</h2>
-            <p class="text-white/80">Измените информацию о дефекте</p>
+            <h2 class="text-3xl font-bold text-white mb-2">Выполнение дефекта</h2>
+            <!-- Removed subtitle "Измените информацию о дефекте" as per user request -->
+            <!--<p class="text-white/80">Измените информацию о дефекте</p>-->
           </div>
         </div>
 
@@ -63,7 +64,7 @@
         <div v-else class="glass rounded-2xl p-8 animate-slide-up">
           <form @submit.prevent="handleSubmit" class="space-y-6">
         <!-- Defect Title -->
-        <div v-if="hasRole('1')">
+        <div v-if="hasRole('1') && originalStatus !== 'В работе' && originalStatus !== 'На проверке'">
           <label class="block text-sm font-medium text-white/80 mb-2">
             Название дефекта *
           </label>
@@ -79,7 +80,7 @@
         </div>
 
         <!-- Defect Description -->
-        <div v-if="hasRole('1')">
+        <div v-if="hasRole('1') && originalStatus !== 'В работе' && originalStatus !== 'На проверке'">
           <label class="block text-sm font-medium text-white/80 mb-2">
             Описание дефекта *
           </label>
@@ -95,18 +96,22 @@
         </div>
 
         <!-- Additional Attachments -->
-        <div v-if="hasRole('1')">
-          <label class="block text-sm font-medium text-white/80 mb-2">
+        <div v-if="originalStatus === 'В работе'">
+          <label for="attachments" class="block text-sm font-medium text-white mb-2">
             Дополнительные вложения
           </label>
           <input
+            id="attachments"
             type="file"
             multiple
+            accept="image/*,.pdf,.doc,.docx"
             ref="fileInput"
             @change="handleFileChange"
-            class="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 hover:border-gray-400 focus:scale-105"
+            class="w-full px-4 py-3 border border-white/20 rounded-xl bg-white/50 backdrop-blur focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-500 file:text-white hover:file:bg-primary-600"
           />
-          <p class="mt-1 text-sm text-white/60">Выберите файлы для добавления к существующим вложениям</p>
+          <p class="mt-1 text-sm text-white/60">
+            Поддерживаются изображения, PDF и документы Word
+          </p>
           <div v-if="selectedFiles.length > 0" class="mt-2">
             <p class="text-sm text-white/80">Выбранные файлы:</p>
             <ul class="text-sm text-white/60">
@@ -116,7 +121,7 @@
         </div>
 
             <!-- Priority (only for regular users) -->
-            <div v-if="hasRole('1')" class="mb-6">
+            <div v-if="hasRole('1') && originalStatus !== 'В работе' && originalStatus !== 'На проверке'" class="mb-6">
               <label class="block text-sm font-medium text-white/80 mb-2">
                 Приоритет *
               </label>
@@ -135,37 +140,38 @@
               <p v-if="errors.priority" class="mt-1 text-sm text-red-400">{{ errors.priority }}</p>
             </div>
 
-            <!-- Status (only for managers and admins) -->
-            <div v-if="!hasRole('1')" class="mb-6">
+
+
+            <!-- Existing Attachments (only for managers and admins) -->
+            <div v-if="!hasRole('1') && existingAttachments.length > 0 && originalStatus !== 'В работе'" class="mb-6">
               <label class="block text-sm font-medium text-white/80 mb-2">
-                Статус *
+                Вложения
               </label>
-              <select
-                v-model="form.status"
-                required
-                class="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 hover:border-gray-400 focus:scale-105 appearance-none"
-                :class="{ 'border-red-300 focus:ring-red-500': errors.status }"
-              >
-                <option value="" disabled>Выберите статус</option>
-                <option value="Новый">Новый</option>
-                <option value="В работе">В работе</option>
-                <option value="На проверке">На проверке</option>
-                <option value="Закрыт">Закрыт</option>
-                <option value="Отменен">Отменен</option>
-              </select>
-              <p v-if="errors.status" class="mt-1 text-sm text-red-400">{{ errors.status }}</p>
+              <div class="space-y-2">
+                <a
+                  v-for="attachment in existingAttachments"
+                  :key="attachment"
+                  :href="attachment"
+                  target="_blank"
+                  class="flex items-center space-x-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg px-4 py-3 text-white hover:text-blue-200 transition-all duration-200 hover:border-white/40 hover:shadow-lg"
+                >
+                  <PaperClipIcon class="w-5 h-5 text-white" />
+                  <span class="font-medium">{{ getFileName(attachment) }}</span>
+                </a>
+              </div>
             </div>
 
             <!-- Assignee and Due Date (only for managers and admins) -->
-            <div v-if="!hasRole('1')" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div v-if="!hasRole('1') && originalStatus !== 'В работе' && originalStatus !== 'На проверке'" class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <!-- Assignee -->
               <div>
                 <label class="block text-sm font-medium text-white/80 mb-2">
-                  Исполнитель
+                  Исполнитель {{ originalStatus === 'Новый' ? '*' : '' }}
                 </label>
                 <input
                   v-model="form.assignee"
                   type="text"
+                  :required="originalStatus === 'Новый'"
                   class="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 hover:border-gray-400 focus:scale-105"
                   placeholder="Имя исполнителя"
                   :class="{ 'border-red-300 focus:ring-red-500': errors.assignee }"
@@ -176,11 +182,12 @@
               <!-- Due Date -->
               <div>
                 <label class="block text-sm font-medium text-white/80 mb-2">
-                  Срок выполнения
+                  Срок выполнения {{ originalStatus === 'Новый' ? '*' : '' }}
                 </label>
                 <input
                   v-model="form.due_date"
                   type="date"
+                  :required="originalStatus === 'Новый'"
                   class="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 hover:border-gray-400 focus:scale-105"
                   :class="{ 'border-red-300 focus:ring-red-500': errors.due_date }"
                 />
@@ -189,7 +196,7 @@
             </div>
 
             <!-- Form Actions -->
-            <div class="flex flex-col sm:flex-row sm:justify-end space-y-3 sm:space-y-0 sm:space-x-4 pt-6">
+            <div class="flex flex-col sm:flex-row sm:justify-end space-y-3 sm:space-y-0 sm:space-x-4 pt-6" v-if="originalStatus !== 'На проверке' || hasRole('1')">
               <router-link
                 :to="`/defects/${defectId}`"
                 class="px-6 py-3 text-white/80 hover:text-white border border-white/30 rounded-xl font-medium transition-all duration-200 hover:bg-white/10 text-center"
@@ -202,6 +209,32 @@
                 class="bg-primary-600 text-white px-8 py-3 rounded-xl font-medium hover:bg-primary-700 transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center"
               >
                 <span v-if="!isSubmitting">Сохранить изменения</span>
+                <div v-else class="flex items-center">
+                  <div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Сохранение...
+                </div>
+              </button>
+            </div>
+
+            <!-- Special Actions for "На проверке" status (managers/admins only) -->
+            <div class="flex flex-col sm:flex-row sm:justify-end space-y-3 sm:space-y-0 sm:space-x-4 pt-6" v-else>
+              <button
+                @click="setStatusAndSubmit('В работе')"
+                :disabled="isSubmitting"
+                class="bg-gray-600 text-white px-8 py-3 rounded-xl font-medium hover:bg-gray-700 transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center"
+              >
+                <span v-if="!isSubmitting">На доработку</span>
+                <div v-else class="flex items-center">
+                  <div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Сохранение...
+                </div>
+              </button>
+              <button
+                @click="setStatusAndSubmit('Закрыт')"
+                :disabled="isSubmitting"
+                class="bg-blue-600 text-white px-8 py-3 rounded-xl font-medium hover:bg-blue-700 transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center"
+              >
+                <span v-if="!isSubmitting">Завершить</span>
                 <div v-else class="flex items-center">
                   <div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
                   Сохранение...
@@ -235,7 +268,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { api } from '../utils/api';
 import { useAuth } from '../composables/useAuth';
 import TheHeader from '../components/TheHeader.vue';
-import { ArrowLeftIcon, ExclamationTriangleIcon } from '@heroicons/vue/24/outline';
+import { ArrowLeftIcon, ExclamationTriangleIcon, PaperClipIcon } from '@heroicons/vue/24/outline';
 
 const { hasRole } = useAuth();
 
@@ -255,9 +288,17 @@ interface Defect {
   project_name?: string;
   creator_id: number;
   creator_name?: string;
+  attachments?: string[];
 }
 
-const form = reactive({
+const form = reactive<{
+  title: string;
+  description: string;
+  status: string;
+  priority: string;
+  assignee: string;
+  due_date: string;
+}>({
   title: '',
   description: '',
   status: 'Новый',
@@ -283,6 +324,8 @@ const errorMessage = ref('');
 const accessDenied = ref(false);
 const selectedFiles = ref<File[]>([]);
 const fileInput = ref<HTMLInputElement | null>(null);
+const originalStatus = ref('');
+const existingAttachments = ref<string[]>([]);
 
 // Load defect data on component mount
 onMounted(async () => {
@@ -290,6 +333,9 @@ onMounted(async () => {
     const response = await api.get(`/defects/${defectId}`);
     if (response.data) {
       const defect: Defect = response.data;
+
+      originalStatus.value = defect.status;
+      existingAttachments.value = defect.attachments || [];
 
       form.title = defect.title;
       form.description = defect.description;
@@ -316,6 +362,8 @@ const validateForm = () => {
   errors.description = '';
   errors.status = '';
   errors.priority = '';
+  errors.assignee = '';
+  errors.due_date = '';
 
   let isValid = true;
 
@@ -350,6 +398,19 @@ const validateForm = () => {
       errors.status = 'Выберите статус дефекта';
       isValid = false;
     }
+
+    // Validate assignee and due_date if original status was 'Новый'
+    if (originalStatus.value === 'Новый') {
+      if (!form.assignee.trim()) {
+        errors.assignee = 'Исполнитель обязателен для новых дефектов';
+        isValid = false;
+      }
+
+      if (!form.due_date) {
+        errors.due_date = 'Срок выполнения обязателен для новых дефектов';
+        isValid = false;
+      }
+    }
   }
 
   return isValid;
@@ -362,9 +423,26 @@ const handleFileChange = (event: Event) => {
   }
 };
 
+const getFileName = (url: string) => {
+  // Extract filename from URL like "/static/defects/1/1234567890_file.txt"
+  const parts = url.split('/');
+  return parts[parts.length - 1];
+};
+
+const setStatusAndSubmit = async (newStatus: string) => {
+  form.status = newStatus;
+  await handleSubmit();
+};
+
 const handleSubmit = async () => {
-  if (!validateForm()) {
-    return;
+  // Check if this is a special status-only change for "На проверке"
+  const isSpecialStatusChange = originalStatus.value === 'На проверке' && !hasRole('1') && (form.status === 'Закрыт' || form.status === 'В работе');
+
+  // Skip validation for special status change
+  if (!isSpecialStatusChange) {
+    if (!validateForm()) {
+      return;
+    }
   }
 
   isSubmitting.value = true;
@@ -375,7 +453,10 @@ const handleSubmit = async () => {
     const formData = new FormData();
     formData.append('defect_id', defectId);
 
-    if (hasRole('1')) {
+    if (isSpecialStatusChange) {
+      // For special status changes, only send status
+      formData.append('status', form.status);
+    } else if (hasRole('1')) {
       formData.append('title', form.title.trim());
       formData.append('description', form.description.trim());
       formData.append('priority', form.priority);
@@ -384,9 +465,7 @@ const handleSubmit = async () => {
       selectedFiles.value.forEach((file) => {
         formData.append('attachments', file);
       });
-    }
-
-    if (!hasRole('1')) {
+    } else {
       formData.append('status', form.status);
       formData.append('assignee', form.assignee.trim() || '');
       formData.append('due_date', form.due_date || '');

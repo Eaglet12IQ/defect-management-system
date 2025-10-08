@@ -11,12 +11,12 @@
             <div class="flex items-center gap-2 mb-2">
               <h3 class="text-lg font-semibold text-gray-900 line-clamp-2" :title="defect.title">{{ defect.title }}</h3>
               <button
-                v-if="!hasRoleId(3)"
+                v-if="!hasRoleId(3) && (hasRoleId(2) ? defect.status !== 'В работе' : defect.status === 'В работе')"
                 @click.stop="$emit('edit', defect)"
                 class="p-1.5 text-gray-400 hover:text-primary-600 transition-colors duration-200 rounded-md hover:bg-primary-50 flex-shrink-0"
-                title="Редактировать"
+                title="Выполнение"
               >
-                <PencilIcon class="w-4 h-4" />
+                <PlayIcon class="w-4 h-4" />
               </button>
             </div>
             <p class="text-gray-600 text-sm line-clamp-3 pr-40" :title="defect.description">{{ defect.description }}</p>
@@ -78,7 +78,7 @@
 
 <script setup lang="ts">
 import {
-  PencilIcon,
+  PlayIcon,
   PaperClipIcon
 } from '@heroicons/vue/24/outline';
 import { useAuth } from '../composables/useAuth';

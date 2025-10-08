@@ -196,6 +196,9 @@ async def edit_defect(
     if status:
         try:
             status_enum = DefectStatusEnum(status)
+            # Special validation for status changes from "На проверке"
+            if status_enum in [DefectStatusEnum.IN_PROGRESS, DefectStatusEnum.CLOSED] and defect.status != DefectStatusEnum.UNDER_REVIEW:
+                raise HTTPException(status_code=400, detail="Статус можно изменить только для дефектов в статусе 'На проверке'!")
         except ValueError:
             raise HTTPException(status_code=400, detail="Неверный статус дефекта!")
 
@@ -250,6 +253,14 @@ async def edit_defect(
         defect.assignee = assignee
     if parsed_due_date is not None:
         defect.due_date = parsed_due_date
+
+    # Automatically change status to "В работе" when manager/admin assigns assignee and due_date for new defects
+    if role_id != 1 and defect.status == DefectStatusEnum.NEW and assignee and parsed_due_date:
+        defect.status = DefectStatusEnum.IN_PROGRESS
+
+    # Automatically change status to "На проверке" when engineer adds attachments while status is "В работе"
+    if role_id == 1 and defect.status == DefectStatusEnum.IN_PROGRESS and new_attachments:
+        defect.status = DefectStatusEnum.UNDER_REVIEW
 
     # Append new attachments to existing ones
     defect.attachments = existing_attachments + new_attachments

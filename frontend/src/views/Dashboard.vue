@@ -1,8 +1,8 @@
 <template>
-  <div class="min-h-screen gradient-bg">
+  <div class="h-screen flex flex-col gradient-bg">
     <TheHeader />
-    
-    <main class="container-responsive py-8">
+
+    <main class="flex-1 container-responsive py-8 overflow-hidden">
       <!-- Welcome Section -->
       <div class="mb-8 animate-fade-in">
         <h2 class="text-3xl font-bold text-white mb-2">
@@ -11,18 +11,18 @@
       </div>
 
       <!-- Register New User Form (for role 4) -->
-      <div v-if="userRole === 4" class="glass rounded-2xl p-6 mb-8 animate-slide-up">
-        <h3 class="text-xl font-semibold text-white mb-6">Регистрация нового пользователя</h3>
+      <div v-if="userRole === 4" class="glass rounded-2xl p-4 mb-4 animate-slide-up max-h-96 overflow-y-auto">
+        <h3 class="text-lg font-semibold text-white mb-4">Регистрация нового пользователя</h3>
 
-        <form @submit.prevent="handleRegister" class="space-y-6">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <form @submit.prevent="handleRegister" class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-white/80 mb-2">Username</label>
               <input
                 v-model="registerForm.username"
                 type="text"
                 required
-                class="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 hover:border-gray-400 focus:scale-105"
+                class="w-full px-3 py-2 rounded-xl border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 hover:border-gray-400 focus:scale-105"
                 placeholder="username"
               />
             </div>
@@ -33,7 +33,7 @@
                 v-model="registerForm.email"
                 type="email"
                 required
-                class="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 hover:border-gray-400 focus:scale-105"
+                class="w-full px-3 py-2 rounded-xl border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 hover:border-gray-400 focus:scale-105"
                 placeholder="email@example.com"
               />
             </div>
@@ -44,7 +44,7 @@
                 v-model="registerForm.last_name"
                 type="text"
                 required
-                class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 hover:border-gray-300 focus:scale-105"
+                class="w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 hover:border-gray-300 focus:scale-105"
                 placeholder="Фамилия"
               />
             </div>
@@ -55,7 +55,7 @@
                 v-model="registerForm.first_name"
                 type="text"
                 required
-                class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 hover:border-gray-300 focus:scale-105"
+                class="w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 hover:border-gray-300 focus:scale-105"
                 placeholder="Имя"
               />
             </div>
@@ -65,7 +65,7 @@
               <input
                 v-model="registerForm.middle_name"
                 type="text"
-                class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 hover:border-gray-300 focus:scale-105"
+                class="w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 hover:border-gray-300 focus:scale-105"
                 placeholder="Отчество"
               />
             </div>
@@ -77,7 +77,7 @@
                 type="file"
                 accept="image/*"
                 @change="handleAvatarChange"
-                class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 hover:border-gray-300 focus:scale-105"
+                class="w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 hover:border-gray-300 focus:scale-105"
               />
             </div>
 
@@ -150,13 +150,115 @@
 
       <!-- Main Content Grid -->
       <div v-if="userRole !== 4" class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-        <!-- Recent Defects -->
+        <!-- Defects Section -->
         <div class="lg:col-span-2">
-          <div class="glass rounded-2xl p-6 animate-slide-up">
-            <div class="flex items-center mb-6">
-              <h3 class="text-xl font-semibold text-white">Дефекты в работе</h3>
+          <!-- For Managers: Two separate blocks -->
+          <div v-if="userRole === 2" class="space-y-6">
+            <!-- New Defects -->
+            <div class="glass rounded-2xl p-6 animate-slide-up">
+              <div class="flex items-center mb-6">
+                <h3 class="text-xl font-semibold text-blue-800 border-blue-200 border-b-4 pb-2">Новые дефекты</h3>
+              </div>
+
+              <div class="custom-scroll max-h-64 overflow-y-auto space-y-4">
+                <div
+                  v-if="newDefects.length === 0"
+                  class="text-center text-gray-600 py-8"
+                >
+                  Нет новых дефектов
+                </div>
+                <div
+                  v-for="(defect, index) in newDefects"
+                  :key="defect.id"
+                  class="flex items-start p-5 bg-white rounded-xl hover:bg-gray-50 transition-all duration-200 cursor-pointer"
+                  @click="viewDefect(defect)"
+                >
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-start justify-between">
+                      <div class="flex-1">
+                        <h4 class="text-base font-medium text-gray-900 truncate">
+                          {{ defect.title }}
+                        </h4>
+                        <p class="text-sm text-gray-700 mt-1 line-clamp-2 leading-1.4">
+                          {{ defect.description }}
+                        </p>
+                        <div class="flex items-center space-x-4 mt-2 text-sm text-gray-600">
+                          <span>{{ defect.location }}</span>
+                          <span>{{ formatDate(defect.due_date) }}</span>
+                        </div>
+                      </div>
+
+                      <div class="flex flex-col items-end space-y-1 ml-4">
+                        <span
+                          class="px-2 py-1 text-sm font-medium rounded-full border"
+                          :class="getPriorityClass(defect.priority)"
+                        >
+                          {{ getPriorityText(defect.priority) }}
+                        </span>
+                        <span class="text-sm text-gray-600">{{ defect.assignee }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            
+
+            <!-- Under Review Defects -->
+            <div class="glass rounded-2xl p-6 animate-slide-up">
+              <div class="flex items-center mb-6">
+                <h3 class="text-xl font-semibold text-purple-800 border-purple-200 border-b-4 pb-2">Дефекты на проверке</h3>
+              </div>
+
+              <div class="custom-scroll max-h-64 overflow-y-auto space-y-4">
+                <div
+                  v-if="underReviewDefects.length === 0"
+                  class="text-center text-gray-600 py-8"
+                >
+                  Нет дефектов на проверке
+                </div>
+                <div
+                  v-for="(defect, index) in underReviewDefects"
+                  :key="defect.id"
+                  class="flex items-start p-5 bg-white rounded-xl hover:bg-gray-50 transition-all duration-200 cursor-pointer"
+                  @click="viewDefect(defect)"
+                >
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-start justify-between">
+                      <div class="flex-1">
+                        <h4 class="text-base font-medium text-gray-900 truncate">
+                          {{ defect.title }}
+                        </h4>
+                        <p class="text-sm text-gray-700 mt-1 line-clamp-2 leading-1.4">
+                          {{ defect.description }}
+                        </p>
+                        <div class="flex items-center space-x-4 mt-2 text-sm text-gray-600">
+                          <span>{{ defect.location }}</span>
+                          <span>{{ formatDate(defect.due_date) }}</span>
+                        </div>
+                      </div>
+
+                      <div class="flex flex-col items-end space-y-1 ml-4">
+                        <span
+                          class="px-2 py-1 text-sm font-medium rounded-full border"
+                          :class="getPriorityClass(defect.priority)"
+                        >
+                          {{ getPriorityText(defect.priority) }}
+                        </span>
+                        <span class="text-sm text-gray-600">{{ defect.assignee }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- For Engineers: Recent Defects -->
+          <div v-if="userRole === 1" class="glass rounded-2xl p-6 animate-slide-up">
+            <div class="flex items-center mb-6">
+              <h3 class="text-xl font-semibold text-yellow-800 border-yellow-200 border-b-4 pb-2">Дефекты в работе</h3>
+            </div>
+
             <div class="custom-scroll max-h-64 overflow-y-auto space-y-4">
               <div
                 v-if="recentDefects.length === 0"
@@ -167,8 +269,7 @@
               <div
                 v-for="(defect, index) in recentDefects"
                 :key="defect.id"
-                class="flex items-start p-5 bg-white rounded-xl hover:bg-gray-50 transition-all duration-200 cursor-pointer animate-slide-up hover-lift"
-                :class="`animate-slide-up-delay-${Math.min(index + 1, 4)}`"
+                class="flex items-start p-5 bg-white rounded-xl hover:bg-gray-50 transition-all duration-200 cursor-pointer"
                 @click="viewDefect(defect)"
               >
                 <div class="flex-1 min-w-0">
@@ -200,51 +301,37 @@
               </div>
             </div>
           </div>
+
+          <!-- For Leaders: Charts -->
+          <div v-if="userRole === 3" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- Defect Status Chart -->
+            <div class="glass rounded-2xl p-4 animate-slide-up flex flex-col h-80">
+              <h3 class="text-lg font-semibold text-white mb-3 flex-shrink-0">Распределение дефектов по статусам</h3>
+              <div class="flex-1 min-h-0">
+                <canvas ref="defectStatusChart" class="w-full h-full"></canvas>
+              </div>
+            </div>
+
+            <!-- Defect Priority Chart -->
+            <div class="glass rounded-2xl p-4 animate-slide-up flex flex-col h-80">
+              <h3 class="text-lg font-semibold text-white mb-3 flex-shrink-0">Распределение дефектов по приоритетам</h3>
+              <div class="flex-1 min-h-0">
+                <canvas ref="defectPriorityChart" class="w-full h-full"></canvas>
+              </div>
+            </div>
+
+            <!-- Project Status Chart -->
+            <div class="glass rounded-2xl p-4 animate-slide-up flex flex-col h-80">
+              <h3 class="text-lg font-semibold text-white mb-3 flex-shrink-0">Распределение проектов по статусам</h3>
+              <div class="flex-1 min-h-0">
+                <canvas ref="projectStatusChart" class="w-full h-full"></canvas>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Quick Actions & Stats -->
         <div class="space-y-6">
-          <!-- Quick Actions -->
-          <div class="glass rounded-2xl p-6 animate-slide-up-delay-2">
-            <h3 class="text-lg font-semibold text-white mb-4">Быстрые действия</h3>
-            <div class="space-y-3">
-              <!-- Show "New project" for role 3 (Руководитель) -->
-              <button
-                v-if="userRole === 3"
-                @click="navigateToCreateProject"
-                class="w-full bg-primary-600 text-white px-4 py-3 rounded-xl font-medium hover:bg-primary-700 transition-all duration-200 transform hover:scale-105 flex items-center justify-center"
-              >
-                <FolderPlusIcon class="w-5 h-5 mr-2" />
-                Новый проект
-              </button>
-              <!-- Show "New defect" for role 1 (Инженер) -->
-              <button
-                v-else-if="userRole === 1"
-                @click="navigateToCreateDefect"
-                class="w-full bg-primary-600 text-white px-4 py-3 rounded-xl font-medium hover:bg-primary-700 transition-all duration-200 transform hover:scale-105 flex items-center justify-center"
-              >
-                <PlusIcon class="w-5 h-5 mr-2" />
-                Новый дефект
-              </button>
-              <!-- Show "Create report" as primary button for role 2 (Менеджер) -->
-              <button
-                v-else-if="userRole === 2"
-                class="w-full bg-primary-600 text-white px-4 py-3 rounded-xl font-medium hover:bg-primary-700 transition-all duration-200 transform hover:scale-105 flex items-center justify-center"
-              >
-                <DocumentTextIcon class="w-5 h-5 mr-2" />
-                Создать отчет
-              </button>
-              <!-- Show "Create report" as secondary button for other roles -->
-              <button
-                v-else
-                class="w-full bg-white/20 text-white px-4 py-3 rounded-xl font-medium hover:bg-white/30 border border-white/30 transition-all duration-200 transform hover:scale-105 flex items-center justify-center hover:shadow-lg"
-              >
-                <DocumentTextIcon class="w-5 h-5 mr-2" />
-                Создать отчет
-              </button>
-            </div>
-          </div>
-
           <!-- Team Activity -->
           <div class="glass rounded-2xl p-6 animate-slide-up-delay-3">
             <h3 class="text-lg font-semibold text-white mb-4">Активность команды</h3>
@@ -252,8 +339,7 @@
               <div
                 v-for="(activity, index) in teamActivity"
                 :key="activity.id"
-                class="flex items-center space-x-3 animate-slide-up cursor-pointer hover:bg-white/10 transition-colors rounded-lg p-2"
-                :class="`animate-slide-up-delay-${Math.min(index + 4, 4)}`"
+                class="flex items-center space-x-3 cursor-pointer hover:bg-white/10 transition-colors rounded-lg p-2"
                 @click="viewActivity(activity)"
               >
                 <div class="flex-1 min-w-0">
@@ -278,7 +364,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, reactive, type Ref } from 'vue';
+import { computed, onMounted, ref, reactive, type Ref, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuth } from '../composables/useAuth';
 import { mockStats, mockDefects, type Defect } from '../data/mockData';
@@ -372,6 +458,20 @@ onMounted(async () => {
       }));
     }
     recentDefects.value = response.data.recent_defects || [];
+    newDefects.value = response.data.new_defects || [];
+    underReviewDefects.value = response.data.under_review_defects || [];
+
+    // Chart data for leaders
+    if (userRole.value === 3) {
+      defectStatusChartData.value = response.data.defect_status_chart || [];
+      defectPriorityChartData.value = response.data.defect_priority_chart || [];
+      projectStatusChartData.value = response.data.project_status_chart || [];
+
+      // Render charts after data is loaded
+      nextTick(() => {
+        renderCharts();
+      });
+    }
   }
 });
 
@@ -431,21 +531,53 @@ const handleRegister = async () => {
 };
 
 const recentDefects = ref<any[]>([]);
+const newDefects = ref<any[]>([]);
+const underReviewDefects = ref<any[]>([]);
+const isLoadingDefects = ref(true);
+
+// Chart data for leaders
+const defectStatusChartData = ref<any[]>([]);
+const defectPriorityChartData = ref<any[]>([]);
+const projectStatusChartData = ref<any[]>([]);
+
+// Chart refs
+const defectStatusChart = ref<HTMLCanvasElement | null>(null);
+const defectPriorityChart = ref<HTMLCanvasElement | null>(null);
+const projectStatusChart = ref<HTMLCanvasElement | null>(null);
 
 
 
 
 
-// Helper functions
 const getStatusColor = (status: string) => {
   const colors = {
-    'new': 'bg-blue-500',
-    'in-progress': 'bg-yellow-500',
-    'review': 'bg-purple-500',
-    'closed': 'bg-green-500',
-    'cancelled': 'bg-red-500'
+    'Новый': '#1e40af', // blue-800
+    'В работе': '#92400e', // yellow-800
+    'На проверке': '#6b21a8', // purple-800
+    'Закрыт': '#166534', // green-800
+    'Отменен': '#991b1b' // red-800
   };
-  return colors[status as keyof typeof colors] || 'bg-gray-500';
+  return colors[status as keyof typeof colors] || '#6b7280'; // gray-500 as fallback
+};
+
+const getPriorityColor = (priority: string) => {
+  const colors = {
+    'Низкий': '#15803d', // green-700
+    'Средний': '#a16207', // yellow-700
+    'Высокий': '#c2410c', // orange-700
+    'Критический': '#b91c1c' // red-700
+  };
+  return colors[priority as keyof typeof colors] || '#6b7280'; // gray-500 as fallback
+};
+
+const getProjectStatusColor = (status: string) => {
+  const colors = {
+    'Планирование': '#3b82f6', // blue-500
+    'Активный': '#fbbf24', // yellow-400
+    'Завершен': '#10b981', // emerald-500
+    'Приостановлен': '#ef4444' // red-500
+  };
+  return colors[status as keyof typeof colors] || '#6b7280'; // gray-500 as fallback
 };
 
 const getPriorityClass = (priority: string) => {
@@ -516,6 +648,84 @@ const viewActivity = (activity: any) => {
     router.push(`/defects/${activity.id}`);
   } else if (activity.table_name === 'projects') {
     router.push(`/projects/${activity.id}`);
+  }
+};
+
+// Chart rendering logic
+import Chart from 'chart.js/auto';
+
+
+const renderCharts = () => {
+  if (defectStatusChart.value) {
+    new Chart(defectStatusChart.value, {
+      type: 'doughnut',
+      data: {
+        labels: defectStatusChartData.value.map(item => item.status),
+        datasets: [{
+          data: defectStatusChartData.value.map(item => item.count),
+          backgroundColor: defectStatusChartData.value.map(item => getStatusColor(item.status)),
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              color: 'white'
+            }
+          }
+        }
+      }
+    });
+  }
+
+  if (defectPriorityChart.value) {
+    new Chart(defectPriorityChart.value, {
+      type: 'doughnut',
+      data: {
+        labels: defectPriorityChartData.value.map(item => item.priority),
+        datasets: [{
+          data: defectPriorityChartData.value.map(item => item.count),
+          backgroundColor: defectPriorityChartData.value.map(item => getPriorityColor(item.priority)),
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              color: 'white'
+            }
+          }
+        }
+      }
+    });
+  }
+
+  if (projectStatusChart.value) {
+    new Chart(projectStatusChart.value, {
+      type: 'doughnut',
+      data: {
+        labels: projectStatusChartData.value.map(item => item.status),
+        datasets: [{
+          data: projectStatusChartData.value.map(item => item.count),
+          backgroundColor: projectStatusChartData.value.map(item => getProjectStatusColor(item.status)),
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              color: 'white'
+            }
+          }
+        }
+      }
+    });
   }
 };
 </script>

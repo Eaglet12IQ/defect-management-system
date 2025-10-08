@@ -43,13 +43,26 @@
 
           <div class="flex space-x-3 mt-4 sm:mt-0">
             <button
-              v-if="!hasRoleId(3)"
+              v-if="!hasRoleId(3) && ((hasRoleId(2) && defect.status !== 'В работе') || (hasRoleId(1) && defect.status === 'В работе'))"
               @click="editDefect"
+              title="Выполнение"
               class="bg-white text-primary-600 px-6 py-3 rounded-xl font-medium hover:bg-gray-50 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl inline-flex items-center"
             >
-              <PencilIcon class="w-5 h-5 mr-2" />
-              Редактировать
+              <PlayIcon class="w-5 h-5 mr-2" />
+              Выполнение
             </button>
+            <span
+              v-else-if="!hasRoleId(3) && hasRoleId(2) && defect.status === 'В работе'"
+              class="text-white/70 text-sm"
+            >
+              ожидаем результат от инженера
+            </span>
+            <span
+              v-else-if="!hasRoleId(3)"
+              class="text-white/70 text-sm"
+            >
+              ожидаем решение менеджера
+            </span>
           </div>
         </div>
 
@@ -161,7 +174,7 @@ import { api } from '../utils/api';
 import { useAuth } from '../composables/useAuth';
 import {
   ArrowLeftIcon,
-  PencilIcon,
+  PlayIcon,
   ExclamationTriangleIcon,
   PaperClipIcon
 } from '@heroicons/vue/24/outline';
