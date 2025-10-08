@@ -305,7 +305,7 @@
           <!-- For Leaders: Charts -->
           <div v-if="userRole === 3" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <!-- Defect Status Chart -->
-            <div class="glass rounded-2xl p-4 animate-slide-up flex flex-col h-80">
+            <div class="glass rounded-2xl p-4 animate-slide-up flex flex-col h-86">
               <h3 class="text-lg font-semibold text-white mb-3 flex-shrink-0">Распределение дефектов по статусам</h3>
               <div class="flex-1 min-h-0">
                 <canvas ref="defectStatusChart" class="w-full h-full"></canvas>
@@ -313,7 +313,7 @@
             </div>
 
             <!-- Defect Priority Chart -->
-            <div class="glass rounded-2xl p-4 animate-slide-up flex flex-col h-80">
+            <div class="glass rounded-2xl p-4 animate-slide-up flex flex-col h-[350px]">
               <h3 class="text-lg font-semibold text-white mb-3 flex-shrink-0">Распределение дефектов по приоритетам</h3>
               <div class="flex-1 min-h-0">
                 <canvas ref="defectPriorityChart" class="w-full h-full"></canvas>
@@ -321,7 +321,7 @@
             </div>
 
             <!-- Project Status Chart -->
-            <div class="glass rounded-2xl p-4 animate-slide-up flex flex-col h-80">
+            <div class="glass rounded-2xl p-4 animate-slide-up flex flex-col h-86">
               <h3 class="text-lg font-semibold text-white mb-3 flex-shrink-0">Распределение проектов по статусам</h3>
               <div class="flex-1 min-h-0">
                 <canvas ref="projectStatusChart" class="w-full h-full"></canvas>
@@ -333,7 +333,7 @@
         <!-- Quick Actions & Stats -->
         <div class="space-y-6">
           <!-- Team Activity -->
-          <div class="glass rounded-2xl p-6 animate-slide-up-delay-3">
+          <div class="glass rounded-2xl p-6 animate-slide-up-delay-3 h-86">
             <h3 class="text-lg font-semibold text-white mb-4">Активность команды</h3>
             <div class="custom-scroll max-h-64 overflow-y-auto space-y-1">
               <div
