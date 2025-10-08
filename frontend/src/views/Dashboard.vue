@@ -160,32 +160,27 @@
             <div class="custom-scroll max-h-64 overflow-y-auto space-y-4">
               <div
                 v-if="recentDefects.length === 0"
-                class="text-center text-white/70 py-8"
+                class="text-center text-gray-600 py-8"
               >
                 Нет дефектов для отображения
               </div>
               <div
                 v-for="(defect, index) in recentDefects"
                 :key="defect.id"
-                class="flex items-start space-x-4 p-4 bg-white/50 rounded-xl hover:bg-white/70 transition-all duration-200 cursor-pointer animate-slide-up hover-lift"
+                class="flex items-start p-5 bg-white rounded-xl hover:bg-gray-50 transition-all duration-200 cursor-pointer animate-slide-up hover-lift"
                 :class="`animate-slide-up-delay-${Math.min(index + 1, 4)}`"
                 @click="viewDefect(defect)"
               >
-                <div
-                  class="w-3 h-3 rounded-full flex-shrink-0 mt-2"
-                  :class="getStatusColor(defect.status)"
-                ></div>
-
                 <div class="flex-1 min-w-0">
                   <div class="flex items-start justify-between">
                     <div class="flex-1">
-                      <h4 class="text-sm font-medium text-white truncate">
+                      <h4 class="text-base font-medium text-gray-900 truncate">
                         {{ defect.title }}
                       </h4>
-                      <p class="text-xs text-white/80 mt-1 line-clamp-2">
+                      <p class="text-sm text-gray-700 mt-1 line-clamp-2 leading-1.4">
                         {{ defect.description }}
                       </p>
-                      <div class="flex items-center space-x-4 mt-2 text-xs text-white/70">
+                      <div class="flex items-center space-x-4 mt-2 text-sm text-gray-600">
                         <span>{{ defect.location }}</span>
                         <span>{{ formatDate(defect.due_date) }}</span>
                       </div>
@@ -193,12 +188,12 @@
 
                     <div class="flex flex-col items-end space-y-1 ml-4">
                       <span
-                        class="px-2 py-1 text-xs font-medium rounded-full border"
+                        class="px-2 py-1 text-sm font-medium rounded-full border"
                         :class="getPriorityClass(defect.priority)"
                       >
                         {{ getPriorityText(defect.priority) }}
                       </span>
-                      <span class="text-xs text-white/70">{{ defect.assignee }}</span>
+                      <span class="text-sm text-gray-600">{{ defect.assignee }}</span>
                     </div>
                   </div>
                 </div>
@@ -273,59 +268,11 @@
             </div>
           </div>
 
-          <!-- Critical Alerts -->
-          <div v-if="criticalDefects.length > 0" class="glass rounded-2xl p-6 animate-slide-up-delay-4">
-            <div class="flex items-center space-x-2 mb-4">
-              <ExclamationCircleIcon class="w-5 h-5 text-red-600" />
-              <h3 class="text-lg font-semibold text-white">Критические дефекты</h3>
-            </div>
-            <div class="space-y-3">
-              <div
-                v-for="defect in criticalDefects"
-                :key="defect.id"
-                class="p-3 bg-red-50 border border-red-200 rounded-lg cursor-pointer hover:bg-red-100 transition-colors duration-200"
-                @click="viewDefect(defect)"
-              >
-                <h4 class="text-sm font-medium text-red-900">{{ defect.title }}</h4>
-                <p class="text-xs text-red-700 mt-1">{{ defect.location }}</p>
-                <div class="flex items-center justify-between mt-2">
-                  <span class="text-xs text-red-600">{{ defect.assignee }}</span>
-                  <span class="text-xs text-red-500">
-                    {{ isOverdue(defect.dueDate) ? 'Просрочено' : formatDate(defect.dueDate) }}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
+
         </div>
       </div>
 
-      <!-- Charts Section -->
-      <div v-if="userRole !== 4" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <!-- Defects Trend -->
-        <div class="glass rounded-2xl p-6 animate-slide-up-delay-4">
-          <h3 class="text-xl font-semibold text-white mb-6">Динамика дефектов</h3>
-          <div class="h-64">
-            <CanvasChart
-              :data="defectsTrendData"
-              type="line"
-              :animated="true"
-            />
-          </div>
-        </div>
 
-        <!-- Status Distribution -->
-        <div class="glass rounded-2xl p-6 animate-slide-up-delay-4">
-          <h3 class="text-xl font-semibold text-white mb-6">Распределение по статусам</h3>
-          <div class="h-64">
-            <CanvasChart
-              :data="statusDistributionData"
-              type="doughnut"
-              :animated="true"
-            />
-          </div>
-        </div>
-      </div>
     </main>
   </div>
 </template>
@@ -485,27 +432,9 @@ const handleRegister = async () => {
 
 const recentDefects = ref<any[]>([]);
 
-// Critical defects
-const criticalDefects = computed(() => {
-  return mockDefects.filter(d => d.priority === 'critical' && d.status !== 'closed');
-});
 
-// Chart data
-const defectsTrendData = computed(() => [
-  { label: 'Дек', value: 28 },
-  { label: 'Янв', value: 35 },
-  { label: 'Фев', value: 43 },
-  { label: 'Мар', value: 38 },
-  { label: 'Апр', value: 45 },
-  { label: 'Май', value: 52 }
-]);
 
-const statusDistributionData = computed(() => [
-  { label: 'Новые', value: stats.newDefects, color: '#3b82f6' },
-  { label: 'В работе', value: stats.inProgressDefects, color: '#f59e0b' },
-  { label: 'На проверке', value: 5, color: '#8b5cf6' },
-  { label: 'Закрыто', value: stats.closedDefects, color: '#10b981' }
-]);
+
 
 // Helper functions
 const getStatusColor = (status: string) => {
@@ -571,8 +500,7 @@ const isOverdue = (dateString?: string) => {
 };
 
 const viewDefect = (defect: Defect) => {
-  console.log('Viewing defect:', defect.id);
-  // Navigate to defect details
+  router.push(`/defects/${defect.id}`);
 };
 
 const navigateToCreateProject = () => {
